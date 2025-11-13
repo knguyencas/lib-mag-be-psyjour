@@ -1,0 +1,37 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# build artifacts
+dist/
+build/
+.next/ # Next.js specific
+out/ # Next.js static export
+
+# environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# local development
+.DS_Store # macOS specific
+.vscode/ # VS Code settings
+*.log
+*.tmp
+*.swp
+*.swo
+
+# npm package manager cache
+.npm/
+.yarn/
+
+# test coverage
+coverage/
+
+# misc
+temp/
