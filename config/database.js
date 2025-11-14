@@ -2,9 +2,7 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect("mongodb+srv://admin:jkjkkmmk2002@cluster0.j0puvpr.mongodb.net/lib", {
-      // These options are no longer needed in Mongoose 6+
-      // but keeping them won't cause errors
+    const conn = await mongoose.connect(MONGODB_URI, {
     });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const booksController = require('../controllers/books.controller.js');
+const bookController = require('../controllers/books.controller.js');
 
 /**
  * @swagger
@@ -20,25 +20,31 @@ const booksController = require('../controllers/books.controller.js');
  *           type: integer
  *         description: Number of items per page
  *       - in: query
- *         name: genre
+ *         name: primary_genre
  *         schema:
  *           type: string
- *         description: Filter by genre
+ *         description: Filter by primary genre
  *       - in: query
  *         name: category
  *         schema:
  *           type: string
- *         description: Filter by category ID
+ *         description: Filter by category
  *       - in: query
- *         name: inStock
+ *         name: tag
  *         schema:
- *           type: boolean
- *         description: Filter by stock status
+ *           type: string
+ *         description: Filter by tag
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [draft, published, archived]
+ *         description: Filter by status
  *       - in: query
  *         name: search
  *         schema:
  *           type: string
- *         description: Search in title and description
+ *         description: Search in title, author, and blurb
  *       - in: query
  *         name: minRating
  *         schema:
@@ -49,11 +55,22 @@ const booksController = require('../controllers/books.controller.js');
  *         schema:
  *           type: number
  *         description: Maximum rating
+ *       - in: query
+ *         name: featured
+ *         schema:
+ *           type: boolean
+ *         description: Filter by featured status
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [newest, rating, views, downloads]
+ *         description: Sort order
  *     responses:
  *       200:
  *         description: Success
  */
-router.get('/', booksController.getAllBooks);
+router.get('/', bookController.getAllBooks);
 
 /**
  * @swagger
@@ -65,7 +82,7 @@ router.get('/', booksController.getAllBooks);
  *       200:
  *         description: Success
  */
-router.get('/stats/overview', booksController.getBookStatistics);
+router.get('/stats/overview', bookController.getStatsOverview);
 
 /**
  * @swagger
@@ -77,7 +94,50 @@ router.get('/stats/overview', booksController.getBookStatistics);
  *       200:
  *         description: Success
  */
-router.get('/top-rated-by-category', booksController.getTopRatedBooksByCategory);
+router.get('/top-rated-by-category', bookController.getTopRatedByCategory);
+
+/**
+ * @swagger
+ * /books/featured:
+ *   get:
+ *     summary: Get featured books
+ *     tags: [Books]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of books to return
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/featured', bookController.getFeaturedBooks);
+
+/**
+ * @swagger
+ * /books/search:
+ *   get:
+ *     summary: Advanced search for books
+ *     tags: [Books]
+ *     parameters:
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: genre
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: author
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/search', bookController.searchBooks);
 
 /**
  * @swagger
@@ -95,17 +155,17 @@ router.get('/top-rated-by-category', booksController.getTopRatedBooksByCategory)
  *       200:
  *         description: Success
  */
-router.get('/author/:authorId', booksController.getBooksByAuthor);
+router.get('/author/:authorId', bookController.getBooksByAuthor);
 
 /**
  * @swagger
- * /books/category/{categoryId}:
+ * /books/category/{category}:
  *   get:
  *     summary: Get all books by a specific category
  *     tags: [Books]
  *     parameters:
  *       - in: path
- *         name: categoryId
+ *         name: category
  *         required: true
  *         schema:
  *           type: string
@@ -113,7 +173,115 @@ router.get('/author/:authorId', booksController.getBooksByAuthor);
  *       200:
  *         description: Success
  */
-router.get('/category/:categoryId', booksController.getBooksByCategory);
+router.get('/category/:category', bookController.getBooksByCategory);
+
+/**
+ * @swagger
+ * /books/genre/{genre}:
+ *   get:
+ *     summary: Get all books by a specific primary genre
+ *     tags: [Books]
+ *     parameters:
+ *       - in: path
+ *         name: genre
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/genre/:genre', bookController.getBooksByGenre);
+
+/**
+ * @swagger
+ * /books/tags/{tag}:
+ *   get:
+ *     summary: Get all books by a specific tag
+ *     tags: [Books]
+ *     parameters:
+ *       - in: path
+ *         name: tag
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/tags/:tag', bookController.getBooksByTag);
+
+/**
+ * @swagger
+ * /books/metadata/genres:
+ *   get:
+ *     summary: Get all available primary genres
+ *     tags: [Books]
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/metadata/genres', bookController.getPrimaryGenres);
+
+/**
+ * @swagger
+ * /books/metadata/categories:
+ *   get:
+ *     summary: Get all categories (grouped by genre)
+ *     tags: [Books]
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/metadata/categories', bookController.getAllCategories);
+
+/**
+ * @swagger
+ * /books/metadata/categories/{genre}:
+ *   get:
+ *     summary: Get categories by genre
+ *     tags: [Books]
+ *     parameters:
+ *       - in: path
+ *         name: genre
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/metadata/categories/:genre', bookController.getCategoriesByGenre);
+
+/**
+ * @swagger
+ * /books/metadata/tags:
+ *   get:
+ *     summary: Get all tags (grouped by genre)
+ *     tags: [Books]
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/metadata/tags', bookController.getAllTags);
+
+/**
+ * @swagger
+ * /books/metadata/tags/{genre}:
+ *   get:
+ *     summary: Get tags by genre
+ *     tags: [Books]
+ *     parameters:
+ *       - in: path
+ *         name: genre
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/metadata/tags/:genre', bookController.getTagsByGenre);
 
 /**
  * @swagger
@@ -127,13 +295,36 @@ router.get('/category/:categoryId', booksController.getBooksByCategory);
  *         required: true
  *         schema:
  *           type: string
+ *         description: Book ID (book_id field)
  *     responses:
  *       200:
  *         description: Success
  *       404:
  *         description: Book not found
  */
-router.get('/:id', booksController.getBookById);
+router.get('/:id', bookController.getBookById);
+
+/**
+ * @swagger
+ * /books/{id}/related:
+ *   get:
+ *     summary: Get related books
+ *     tags: [Books]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/:id/related', bookController.getRelatedBooks);
 
 /**
  * @swagger
@@ -147,44 +338,13 @@ router.get('/:id', booksController.getBookById);
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - title
- *               - author
- *             properties:
- *               title:
- *                 type: string
- *               author:
- *                 type: string
- *               category:
- *                 type: string
- *               isbn:
- *                 type: string
- *               publishedDate:
- *                 type: string
- *                 format: date
- *               publisher:
- *                 type: string
- *               pages:
- *                 type: number
- *               genre:
- *                 type: string
- *               description:
- *                 type: string
- *               language:
- *                 type: string
- *               price:
- *                 type: number
- *               inStock:
- *                 type: boolean
- *               rating:
- *                 type: number
  *     responses:
  *       201:
  *         description: Book created successfully
  *       400:
  *         description: Bad request
  */
-router.post('/', booksController.createBook);
+router.post('/', bookController.createBook);
 
 /**
  * @swagger
@@ -210,13 +370,13 @@ router.post('/', booksController.createBook);
  *       404:
  *         description: Book not found
  */
-router.put('/:id', booksController.updateBook);
+router.put('/:id', bookController.updateBook);
 
 /**
  * @swagger
- * /books/{id}/stock:
+ * /books/{id}/status:
  *   patch:
- *     summary: Update book stock status
+ *     summary: Update book status
  *     tags: [Books]
  *     parameters:
  *       - in: path
@@ -231,15 +391,16 @@ router.put('/:id', booksController.updateBook);
  *           schema:
  *             type: object
  *             required:
- *               - inStock
+ *               - status
  *             properties:
- *               inStock:
- *                 type: boolean
+ *               status:
+ *                 type: string
+ *                 enum: [draft, published, archived]
  *     responses:
  *       200:
- *         description: Stock status updated
+ *         description: Status updated
  */
-router.patch('/:id/stock', booksController.updateBookStock);
+router.patch('/:id/status', bookController.updateStatus);
 
 /**
  * @swagger
@@ -270,7 +431,54 @@ router.patch('/:id/stock', booksController.updateBookStock);
  *       200:
  *         description: Rating updated
  */
-router.patch('/:id/rating', booksController.updateBookRating);
+router.patch('/:id/rating', bookController.updateRating);
+
+/**
+ * @swagger
+ * /books/{id}/featured:
+ *   patch:
+ *     summary: Toggle book featured status
+ *     tags: [Books]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - featured
+ *             properties:
+ *               featured:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Featured status updated
+ */
+router.patch('/:id/featured', bookController.toggleFeatured);
+
+/**
+ * @swagger
+ * /books/{id}/download:
+ *   post:
+ *     summary: Increment book download count
+ *     tags: [Books]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Download count incremented
+ */
+router.post('/:id/download', bookController.incrementDownload);
 
 /**
  * @swagger
@@ -290,6 +498,6 @@ router.patch('/:id/rating', booksController.updateBookRating);
  *       404:
  *         description: Book not found
  */
-router.delete('/:id', booksController.deleteBook);
+router.delete('/:id', bookController.deleteBook);
 
 module.exports = router;

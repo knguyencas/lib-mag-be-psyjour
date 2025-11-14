@@ -1,532 +1,316 @@
-const Book = require('../models/Book.js');
-const Author = require('../models/Author.js');
-const Category = require('../models/Category.js');
+const bookService = require('../services/books.service.js');
+const ApiResponse = require('../utils/apiResponse.js');
 
-// @desc    Get all books
-// @route   GET /api/books
-// @access  Public
-exports.getAllBooks = async (req, res) => {
-  try {
-    const { page = 1, limit = 10, genre, inStock, search, category, minRating, maxRating } = req.query;
-    
-    const query = {};
-    
-    // Filter by genre
-    if (genre) query.genre = genre;
-    
-    // Filter by category
-    if (category) query.category = category;
-    
-    // Filter by stock status
-    if (inStock !== undefined) query.inStock = inStock === 'true';
-    
-    // Filter by rating range
-    if (minRating) query.rating = { ...query.rating, $gte: parseFloat(minRating) };
-    if (maxRating) query.rating = { ...query.rating, $lte: parseFloat(maxRating) };
-    
-    // Search in title and description
-    if (search) {
-      query.$text = { $search: search };
-    }
-    
-    const books = await Book.find(query)
-      .populate('author', 'name nationality')
-      .populate('category', 'name slug')
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort({ createdAt: -1 });
-    
-    const count = await Book.countDocuments(query);
-    
-    res.json({
-      success: true,
-      data: books,
-      totalPages: Math.ceil(count / limit),
-      currentPage: parseInt(page),
-      total: count
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server Error',
-      error: error.message
-    });
-  }
-};
 
-// @desc    Get single book by ID
-// @route   GET /api/books/:id
-// @access  Public
-exports.getBookById = async (req, res) => {
-  try {
-    const book = await Book.findById(req.params.id)
-      .populate('author')
-      .populate('category');
-    
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        message: 'Book not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: book
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server Error',
-      error: error.message
-    });
-  }
-};
+class BookController {
+//GET /api/books
+  async getAllBooks(req, res, next) {
+    try {
+      const result = await bookService.getAllBooks(req.query);
 
-// @desc    Create new book
-// @route   POST /api/books
-// @access  Private (add authentication middleware as needed)
-exports.createBook = async (req, res) => {
-  try {
-    // Verify author exists
-    const authorExists = await Author.findById(req.body.author);
-    if (!authorExists) {
-      return res.status(404).json({
-        success: false,
-        message: 'Author not found'
-      });
+      res.json(
+        ApiResponse.paginated(
+          result.books,
+          result.pagination,
+          'Books retrieved successfully'
+        )
+      );
+    } catch (error) {
+      next(error);
     }
-    
-    // Verify category exists if provided
-    if (req.body.category) {
-      const categoryExists = await Category.findById(req.body.category);
-      if (!categoryExists) {
-        return res.status(404).json({
-          success: false,
-          message: 'Category not found'
-        });
-      }
-    }
-    
-    const book = await Book.create(req.body);
-    
-    res.status(201).json({
-      success: true,
-      data: book
-    });
-  } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: 'Book with this ISBN already exists'
-      });
-    }
-    
-    res.status(400).json({
-      success: false,
-      message: 'Failed to create book',
-      error: error.message
-    });
   }
-};
 
-// @desc    Update book
-// @route   PUT /api/books/:id
-// @access  Private
-exports.updateBook = async (req, res) => {
-  try {
-    // If updating author, verify the author exists
-    if (req.body.author) {
-      const authorExists = await Author.findById(req.body.author);
-      if (!authorExists) {
-        return res.status(404).json({
-          success: false,
-          message: 'Author not found'
-        });
-      }
-    }
-    
-    // If updating category, verify the category exists
-    if (req.body.category) {
-      const categoryExists = await Category.findById(req.body.category);
-      if (!categoryExists) {
-        return res.status(404).json({
-          success: false,
-          message: 'Category not found'
-        });
-      }
-    }
-    
-    const book = await Book.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true
-      }
-    ).populate('author', 'name nationality').populate('category', 'name slug');
-    
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        message: 'Book not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: book
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: 'Failed to update book',
-      error: error.message
-    });
-  }
-};
+//GET /api/books/:id
+  async getBookById(req, res, next) {
+    try {
+      const book = await bookService.getBookById(req.params.id);
 
-// @desc    Delete book
-// @route   DELETE /api/books/:id
-// @access  Private
-exports.deleteBook = async (req, res) => {
-  try {
-    const book = await Book.findByIdAndDelete(req.params.id);
-    
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        message: 'Book not found'
-      });
+      res.json(
+        ApiResponse.success(book, 'Book retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
     }
-    
-    res.json({
-      success: true,
-      message: 'Book deleted successfully',
-      data: book
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server Error',
-      error: error.message
-    });
   }
-};
 
-// @desc    Get books by author
-// @route   GET /api/books/author/:authorId
-// @access  Public
-exports.getBooksByAuthor = async (req, res) => {
-  try {
-    const books = await Book.find({ author: req.params.authorId })
-      .populate('author', 'name nationality')
-      .populate('category', 'name slug');
-    
-    res.json({
-      success: true,
-      data: books,
-      count: books.length
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server Error',
-      error: error.message
-    });
-  }
-};
+//POST /api/books
+  async createBook(req, res, next) {
+    try {
+      const book = await bookService.createBook(req.body);
 
-// @desc    Get books by category
-// @route   GET /api/books/category/:categoryId
-// @access  Public
-exports.getBooksByCategory = async (req, res) => {
-  try {
-    const { page = 1, limit = 10, sortBy = 'createdAt', order = 'desc' } = req.query;
-    
-    const sortOrder = order === 'asc' ? 1 : -1;
-    const sortOptions = { [sortBy]: sortOrder };
-    
-    const books = await Book.find({ category: req.params.categoryId })
-      .populate('author', 'name nationality')
-      .populate('category', 'name slug')
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort(sortOptions);
-    
-    const count = await Book.countDocuments({ category: req.params.categoryId });
-    
-    res.json({
-      success: true,
-      data: books,
-      totalPages: Math.ceil(count / limit),
-      currentPage: parseInt(page),
-      total: count
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server Error',
-      error: error.message
-    });
+      res.status(201).json(
+        ApiResponse.success(book, 'Book created successfully', 201)
+      );
+    } catch (error) {
+      next(error);
+    }
   }
-};
 
-// @desc    Get top 10 books by rating for every category
-// @route   GET /api/books/top-rated-by-category
-// @access  Public
-exports.getTopRatedBooksByCategory = async (req, res) => {
-  try {
-    const topBooksByCategory = await Book.aggregate([
-      // Only include books with ratings
-      { $match: { rating: { $gt: 0 } } },
-      
-      // Sort by rating in descending order
-      { $sort: { rating: -1, title: 1 } },
-      
-      // Group by category and get top 10 books for each
-      {
-        $group: {
-          _id: '$category',
-          books: {
-            $push: {
-              _id: '$_id',
-              title: '$title',
-              author: '$author',
-              rating: '$rating',
-              genre: '$genre',
-              price: '$price',
-              inStock: '$inStock',
-              publishedDate: '$publishedDate'
-            }
-          }
-        }
-      },
-      
-      // Limit to top 10 books per category
-      {
-        $project: {
-          _id: 1,
-          books: { $slice: ['$books', 10] }
-        }
-      },
-      
-      // Lookup category details
-      {
-        $lookup: {
-          from: 'categories',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'categoryInfo'
-        }
-      },
-      
-      // Unwind category info
-      { $unwind: { path: '$categoryInfo', preserveNullAndEmptyArrays: true } },
-      
-      // Format the output
-      {
-        $project: {
-          _id: 0,
-          categoryId: '$_id',
-          categoryName: '$categoryInfo.name',
-          categorySlug: '$categoryInfo.slug',
-          books: 1
-        }
-      },
-      
-      // Sort by category name
-      { $sort: { categoryName: 1 } }
-    ]);
-    
-    // Populate author details for each book
-    for (let category of topBooksByCategory) {
-      await Book.populate(category.books, {
-        path: 'author',
-        select: 'name nationality'
-      });
-    }
-    
-    // Handle books with no category
-    const booksWithoutCategory = topBooksByCategory.find(cat => cat.categoryId === null);
-    if (booksWithoutCategory) {
-      booksWithoutCategory.categoryName = 'Uncategorized';
-      booksWithoutCategory.categorySlug = 'uncategorized';
-    }
-    
-    res.json({
-      success: true,
-      data: topBooksByCategory,
-      count: topBooksByCategory.length
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server Error',
-      error: error.message
-    });
-  }
-};
+//PUT /api/books/:id
+  async updateBook(req, res, next) {
+    try {
+      const book = await bookService.updateBook(req.params.id, req.body);
 
-// @desc    Update book stock status
-// @route   PATCH /api/books/:id/stock
-// @access  Private
-exports.updateBookStock = async (req, res) => {
-  try {
-    const { inStock } = req.body;
-    
-    if (inStock === undefined) {
-      return res.status(400).json({
-        success: false,
-        message: 'inStock field is required'
-      });
+      res.json(
+        ApiResponse.success(book, 'Book updated successfully')
+      );
+    } catch (error) {
+      next(error);
     }
-    
-    const book = await Book.findByIdAndUpdate(
-      req.params.id,
-      { inStock },
-      { new: true, runValidators: true }
-    ).populate('author', 'name nationality').populate('category', 'name slug');
-    
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        message: 'Book not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: book,
-      message: `Book stock status updated to ${inStock ? 'in stock' : 'out of stock'}`
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: 'Failed to update book stock',
-      error: error.message
-    });
   }
-};
 
-// @desc    Update book rating
-// @route   PATCH /api/books/:id/rating
-// @access  Public
-exports.updateBookRating = async (req, res) => {
-  try {
-    const { rating } = req.body;
-    
-    if (rating === undefined || rating < 0 || rating > 5) {
-      return res.status(400).json({
-        success: false,
-        message: 'Rating must be between 0 and 5'
-      });
-    }
-    
-    const book = await Book.findByIdAndUpdate(
-      req.params.id,
-      { rating },
-      { new: true, runValidators: true }
-    ).populate('author', 'name nationality').populate('category', 'name slug');
-    
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        message: 'Book not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: book,
-      message: 'Book rating updated successfully'
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: 'Failed to update book rating',
-      error: error.message
-    });
-  }
-};
+//DELETE /api/books/:id
+  async deleteBook(req, res, next) {
+    try {
+      await bookService.deleteBook(req.params.id);
 
-// @desc    Get book statistics
-// @route   GET /api/books/stats/overview
-// @access  Public
-exports.getBookStatistics = async (req, res) => {
-  try {
-    const stats = await Book.aggregate([
-      {
-        $facet: {
-          totalBooks: [{ $count: 'count' }],
-          inStockBooks: [
-            { $match: { inStock: true } },
-            { $count: 'count' }
-          ],
-          outOfStockBooks: [
-            { $match: { inStock: false } },
-            { $count: 'count' }
-          ],
-          averageRating: [
-            { $group: { _id: null, avgRating: { $avg: '$rating' } } }
-          ],
-          booksByGenre: [
-            { $group: { _id: '$genre', count: { $sum: 1 } } },
-            { $sort: { count: -1 } }
-          ],
-          booksByCategory: [
-            { $group: { _id: '$category', count: { $sum: 1 } } },
-            { $lookup: {
-                from: 'categories',
-                localField: '_id',
-                foreignField: '_id',
-                as: 'categoryInfo'
-              }
-            },
-            { $unwind: { path: '$categoryInfo', preserveNullAndEmptyArrays: true } },
-            { $project: {
-                _id: 1,
-                categoryName: '$categoryInfo.name',
-                count: 1
-              }
-            },
-            { $sort: { count: -1 } }
-          ],
-          topRatedBooks: [
-            { $match: { rating: { $gt: 0 } } },
-            { $sort: { rating: -1 } },
-            { $limit: 5 },
-            { $project: { title: 1, rating: 1, author: 1 } }
-          ]
-        }
-      }
-    ]);
-    
-    // Populate authors for top rated books
-    if (stats[0].topRatedBooks.length > 0) {
-      await Book.populate(stats[0].topRatedBooks, {
-        path: 'author',
-        select: 'name'
-      });
+      res.json(
+        ApiResponse.success(null, 'Book deleted successfully')
+      );
+    } catch (error) {
+      next(error);
     }
-    
-    res.json({
-      success: true,
-      data: {
-        totalBooks: stats[0].totalBooks[0]?.count || 0,
-        inStockBooks: stats[0].inStockBooks[0]?.count || 0,
-        outOfStockBooks: stats[0].outOfStockBooks[0]?.count || 0,
-        averageRating: stats[0].averageRating[0]?.avgRating?.toFixed(2) || 0,
-        booksByGenre: stats[0].booksByGenre,
-        booksByCategory: stats[0].booksByCategory,
-        topRatedBooks: stats[0].topRatedBooks
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Server Error',
-      error: error.message
-    });
   }
-};
+
+//GET /api/books/genre/:genre
+  async getBooksByGenre(req, res, next) {
+    try {
+      const books = await bookService.getBooksByGenre(req.params.genre);
+
+      res.json(
+        ApiResponse.success(books, 'Books retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/category/:category
+  async getBooksByCategory(req, res, next) {
+    try {
+      const books = await bookService.getBooksByCategory(req.params.category);
+
+      res.json(
+        ApiResponse.success(books, 'Books retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/tags/:tag
+  async getBooksByTag(req, res, next) {
+    try {
+      const books = await bookService.getBooksByTag(req.params.tag);
+
+      res.json(
+        ApiResponse.success(books, 'Books retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/author/:authorId
+  async getBooksByAuthor(req, res, next) {
+    try {
+      const books = await bookService.getBooksByAuthor(req.params.authorId);
+
+      res.json(
+        ApiResponse.success(books, 'Books retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/stats/overview
+  async getStatsOverview(req, res, next) {
+    try {
+      const stats = await bookService.getStatsOverview();
+
+      res.json(
+        ApiResponse.success(stats, 'Statistics retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/top-rated-by-category
+  async getTopRatedByCategory(req, res, next) {
+    try {
+      const result = await bookService.getTopRatedByCategory();
+
+      res.json(
+        ApiResponse.success(result, 'Top rated books retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//PATCH /api/books/:id/status
+  async updateStatus(req, res, next) {
+    try {
+      const book = await bookService.updateStatus(req.params.id, req.body.status);
+
+      res.json(
+        ApiResponse.success(book, 'Status updated successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//PATCH /api/books/:id/rating
+  async updateRating(req, res, next) {
+    try {
+      const book = await bookService.updateRating(req.params.id, req.body.rating);
+
+      res.json(
+        ApiResponse.success(book, 'Rating updated successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//PATCH /api/books/:id/featured
+  async toggleFeatured(req, res, next) {
+    try {
+      const book = await bookService.toggleFeatured(req.params.id, req.body.featured);
+
+      res.json(
+        ApiResponse.success(book, 'Featured status updated successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//POST /api/books/:id/download
+  async incrementDownload(req, res, next) {
+    try {
+      const result = await bookService.incrementDownload(req.params.id);
+
+      res.json(
+        ApiResponse.success(result, 'Download count incremented')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/metadata/genres
+  getPrimaryGenres(req, res, next) {
+    try {
+      const genres = bookService.getPrimaryGenres();
+
+      res.json(
+        ApiResponse.success(genres, 'Genres retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/metadata/categories
+  getAllCategories(req, res, next) {
+    try {
+      const categories = bookService.getAllCategories();
+
+      res.json(
+        ApiResponse.success(categories, 'Categories retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/metadata/categories/:genre
+  getCategoriesByGenre(req, res, next) {
+    try {
+      const categories = bookService.getCategoriesByGenre(req.params.genre);
+
+      res.json(
+        ApiResponse.success(categories, 'Categories retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/metadata/tags
+  getAllTags(req, res, next) {
+    try {
+      const tags = bookService.getAllTags();
+
+      res.json(
+        ApiResponse.success(tags, 'Tags retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/metadata/tags/:genre
+  getTagsByGenre(req, res, next) {
+    try {
+      const tags = bookService.getTagsByGenre(req.params.genre);
+
+      res.json(
+        ApiResponse.success(tags, 'Tags retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/search
+  async searchBooks(req, res, next) {
+    try {
+      const result = await bookService.searchBooks(req.query);
+
+      res.json(
+        ApiResponse.paginated(
+          result.books,
+          result.pagination,
+          'Search results retrieved successfully'
+        )
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/featured
+  async getFeaturedBooks(req, res, next) {
+    try {
+      const limit = parseInt(req.query.limit) || 10;
+      const books = await bookService.getFeaturedBooks(limit);
+
+      res.json(
+        ApiResponse.success(books, 'Featured books retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+//GET /api/books/:id/related
+  async getRelatedBooks(req, res, next) {
+    try {
+      const limit = parseInt(req.query.limit) || 5;
+      const books = await bookService.getRelatedBooks(req.params.id, limit);
+
+      res.json(
+        ApiResponse.success(books, 'Related books retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+module.exports = new BookController();
