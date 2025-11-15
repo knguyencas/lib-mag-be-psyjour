@@ -265,7 +265,7 @@ const structureSchema = new mongoose.Schema({
   description: String
 }, { _id: false });
 
-// over Image
+// Cover Image
 const coverImageCloudSchema = new mongoose.Schema({
   url: {
     type: String,
