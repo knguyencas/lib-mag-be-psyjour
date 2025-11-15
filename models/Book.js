@@ -244,6 +244,56 @@ const TAGS = {
   ]
 };
 
+
+// Cover Image Cloud Schema
+const coverImageCloudSchema = new mongoose.Schema({
+  url: {
+    type: String,
+    required: true
+  },
+  public_id: {
+    type: String,
+    required: true
+  },
+  width: Number,
+  height: Number,
+  format: String
+}, { _id: false });
+
+// EPUB Schema
+const epubSchema = new mongoose.Schema({
+  url: {
+    type: String,
+    required: true
+  },
+  public_id: {
+    type: String,
+    required: true
+  },
+  size_bytes: Number,
+  mime_type: {
+    type: String,
+    default: 'application/epub+zip'
+  },
+  uploaded_at: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: false });
+
+// Upload Info Schema
+const uploadInfoSchema = new mongoose.Schema({
+  admin_id: {
+    type: String,
+    required: true
+  },
+  uploaded_at: {
+    type: Date,
+    default: Date.now
+  },
+  published_at: Date
+}, { _id: false });
+
 // Book Structure - EPUB Split
 const structureSchema = new mongoose.Schema({
   type: {
@@ -273,13 +323,13 @@ const structureSchema = new mongoose.Schema({
       type: String,
       required: true
     },
-    start_href: String, // EPUB href cho điểm bắt đầu part
+    start_href: String,
     chapters: [{
       chapter_number: {
         type: Number,
         required: true
       },
-      local_chapter_number: Number, // Số thứ tự trong part
+      local_chapter_number: Number,
       title: {
         type: String,
         required: true
@@ -292,7 +342,6 @@ const structureSchema = new mongoose.Schema({
     }]
   }],
   
-  // Metadata từ EPUB
   metadata: {
     title: String,
     creator: String,
@@ -301,38 +350,7 @@ const structureSchema = new mongoose.Schema({
   }
 }, { _id: false });
 
-const epubSchema = new mongoose.Schema({
-  url: {
-    type: String,
-    required: true
-  },
-  public_id: {
-    type: String,
-    required: true
-  },
-  size_bytes: Number,
-  mime_type: {
-    type: String,
-    default: 'application/epub+zip'
-  },
-  uploaded_at: {
-    type: Date,
-    default: Date.now
-  }
-}, { _id: false });
-
-// Upload Info
-const uploadInfoSchema = new mongoose.Schema({
-  admin_id: {
-    type: String,
-    required: true
-  },
-  uploaded_at: {
-    type: Date,
-    default: Date.now
-  },
-  published_at: Date
-}, { _id: false });
+// ============= MAIN BOOK SCHEMA =============
 
 const bookSchema = new mongoose.Schema({
   book_id: {
@@ -440,7 +458,7 @@ const bookSchema = new mongoose.Schema({
   
   structure: {
     type: structureSchema,
-    required: true
+    required: false
   },
   
   upload_info: {
@@ -477,6 +495,7 @@ const bookSchema = new mongoose.Schema({
   collection: 'books'
 });
 
+
 bookSchema.index({ title: 'text', author: 'text', blurb: 'text' });
 bookSchema.index({ primary_genre: 1, status: 1 });
 bookSchema.index({ categories: 1 });
@@ -486,6 +505,7 @@ bookSchema.index({ rating: -1 });
 bookSchema.index({ view_count: -1 });
 bookSchema.index({ createdAt: -1 });
 
+
 bookSchema.virtual('available_categories').get(function() {
   return CATEGORIES[this.primary_genre] || [];
 });
@@ -493,6 +513,7 @@ bookSchema.virtual('available_categories').get(function() {
 bookSchema.virtual('available_tags').get(function() {
   return TAGS[this.primary_genre] || [];
 });
+
 
 bookSchema.pre('save', function(next) {
   if (this.primary_genre && this.categories) {
@@ -505,6 +526,7 @@ bookSchema.pre('save', function(next) {
   }
   next();
 });
+
 
 bookSchema.statics.getPrimaryGenres = function() {
   return PRIMARY_GENRES;
@@ -545,6 +567,8 @@ bookSchema.methods.incrementDownloadCount = function() {
   this.download_count += 1;
   return this.save();
 };
+
+// ============= EXPORT =============
 
 const Book = mongoose.model('Book', bookSchema);
 
