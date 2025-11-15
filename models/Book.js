@@ -244,7 +244,7 @@ const TAGS = {
   ]
 };
 
-// Book Structure
+// Book Structure - EPUB Split
 const structureSchema = new mongoose.Schema({
   type: {
     type: String,
@@ -262,22 +262,43 @@ const structureSchema = new mongoose.Schema({
   total_parts: Number,
   total_chapters: Number,
   total_books: Number,
-  description: String
-}, { _id: false });
-
-// Cover Image
-const coverImageCloudSchema = new mongoose.Schema({
-  url: {
-    type: String,
-    required: true
-  },
-  public_id: {
-    type: String,
-    required: true
-  },
-  width: Number,
-  height: Number,
-  format: String
+  description: String,
+  
+  parts: [{
+    part_number: {
+      type: Number,
+      required: true
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    start_href: String, // EPUB href cho điểm bắt đầu part
+    chapters: [{
+      chapter_number: {
+        type: Number,
+        required: true
+      },
+      local_chapter_number: Number, // Số thứ tự trong part
+      title: {
+        type: String,
+        required: true
+      },
+      href: {
+        type: String,
+        required: true
+      },
+      order: Number
+    }]
+  }],
+  
+  // Metadata từ EPUB
+  metadata: {
+    title: String,
+    creator: String,
+    language: String,
+    publisher: String
+  }
 }, { _id: false });
 
 const epubSchema = new mongoose.Schema({

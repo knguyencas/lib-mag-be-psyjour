@@ -5,6 +5,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-store/
 
+# Temp files to ignore
+temp/epub
+cache/epub
+
 # build artifacts
 dist/
 build/
