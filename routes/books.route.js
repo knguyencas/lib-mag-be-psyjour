@@ -285,6 +285,15 @@ router.get('/metadata/tags/:genre', bookController.getTagsByGenre);
 
 /**
  * @swagger
+ * /books/popular:
+ *   get:
+ *     summary: Get popular books based on views and ratings
+ *     tags: [Books]
+ */
+router.get('/popular', bookController.getPopularBooks);
+
+/**
+ * @swagger
  * /books/{id}:
  *   get:
  *     summary: Get a single book by ID

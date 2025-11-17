@@ -137,7 +137,6 @@ class BookService {
     if (categoryNames.length > 0) {
       filter.categories = { $in: categoryNames };
     } else {
-      // fallback: nếu chưa cấu hình primaryGenres cho Category, dùng field primary_genre cũ
       filter.primary_genre = genre;
     }
 
@@ -336,17 +335,40 @@ class BookService {
 
     const filter = { status: 'published' };
 
-    // Text search
     if (keyword) {
-      filter.$text = { $search: keyword };
+      const searchRegex = new RegExp(keyword, 'i'); // case-insensitive
+      
+      filter.$or = [
+        { title: searchRegex },
+        { author: searchRegex },
+        { blurb: searchRegex },
+        { punchline: searchRegex },
+        { primary_genre: searchRegex },
+        { categories: searchRegex },
+        { tags: keyword.toLowerCase() },
+        { publisher: searchRegex }
+      ];
     }
 
-    // Filters
-    if (genre) filter.primary_genre = genre;
-    if (categories && categories.length > 0) filter.categories = { $in: categories };
-    if (tags && tags.length > 0) filter.tags = { $in: tags };
-    if (author) filter.author = new RegExp(author, 'i');
-    if (year) filter.year = year;
+    if (genre && !keyword) {
+      filter.primary_genre = genre;
+    }
+    
+    if (categories && categories.length > 0 && !keyword) {
+      filter.categories = { $in: categories };
+    }
+    
+    if (tags && tags.length > 0 && !keyword) {
+      filter.tags = { $in: tags };
+    }
+    
+    if (author && !keyword) {
+      filter.author = new RegExp(author, 'i');
+    }
+    
+    if (year) {
+      filter.year = year;
+    }
 
     if (minRating || maxRating) {
       filter.rating = {};
@@ -358,7 +380,7 @@ class BookService {
     let sort = {};
     switch (sortBy) {
       case 'relevance':
-        sort = keyword ? { score: { $meta: 'textScore' } } : { rating: -1 };
+        sort = { rating: -1, view_count: -1 };
         break;
       case 'rating':
         sort = { rating: -1 };
@@ -376,14 +398,25 @@ class BookService {
         sort = { rating: -1 };
     }
 
-    // Execute
+    // Execute query
     const skip = (page - 1) * limit;
+    
+    // Log để debug
+    console.log('=== SEARCH DEBUG ===');
+    console.log('Keyword:', keyword);
+    console.log('Filter:', JSON.stringify(filter, null, 2));
+    console.log('Sort:', sort);
+    console.log('Page:', page, 'Limit:', limit);
+    
     const books = await Book.find(filter)
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit));
 
     const total = await Book.countDocuments(filter);
+
+    console.log(`Search found ${total} books for keyword: "${keyword}"`);
+    console.log('===================\n');
 
     return {
       books,
@@ -427,6 +460,20 @@ class BookService {
       .sort({ rating: -1 });
 
     return relatedBooks;
+  }
+
+  async getPopularBooks(limit = 10) {
+    const books = await Book.find({
+      status: 'published'
+    })
+      .sort({ 
+        view_count: -1,
+        rating: -1,
+        download_count: -1
+      })
+      .limit(limit);
+
+    return books;
   }
 }
 

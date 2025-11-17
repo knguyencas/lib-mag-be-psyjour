@@ -310,6 +310,20 @@ class BookController {
       next(error);
     }
   }
+
+  //GET /api/books/popular
+  async getPopularBooks(req, res, next) {
+    try {
+      const limit = parseInt(req.query.limit) || 10;
+      const books = await bookService.getPopularBooks(limit);
+
+      res.json(
+        ApiResponse.success(books, 'Popular books retrieved successfully')
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new BookController();
