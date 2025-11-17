@@ -1,4 +1,5 @@
 const Book = require('../models/Book');
+const Category = require('../models/Category');
 const ApiError = require('../utils/apiError');
 
 class BookService {
@@ -19,8 +20,18 @@ class BookService {
 
     const filter = { status };
 
-    if (primary_genre) filter.primary_genre = primary_genre;
-    if (category) filter.categories = category;
+    if (primary_genre) {
+      const categoryNames = await Category.getCategoryNamesForPrimaryGenre(primary_genre);
+
+      if (categoryNames.length > 0) {
+        filter.categories = { $in: categoryNames };
+      } else {
+        filter.primary_genre = primary_genre;
+      }
+    } else if (category) {
+      filter.categories = category;
+    }
+
     if (tag) filter.tags = tag;
     if (search) filter.$text = { $search: search };
     if (featured !== undefined) filter.featured = featured === 'true';
@@ -42,9 +53,12 @@ class BookService {
       case 'downloads':
         sort = { download_count: -1 };
         break;
+      case 'oldest':
+        sort = { year: 1 };
+        break;
       case 'newest':
       default:
-        sort = { createdAt: -1 };
+        sort = { year: -1, createdAt: -1 }; 
     }
 
     const skip = (page - 1) * limit;
@@ -116,10 +130,18 @@ class BookService {
   }
 
   async getBooksByGenre(genre) {
-    const books = await Book.find({
-      primary_genre: genre,
-      status: 'published'
-    }).sort({ rating: -1 });
+    const categoryNames = await Category.getCategoryNamesForPrimaryGenre(genre);
+
+    const filter = { status: 'published' };
+
+    if (categoryNames.length > 0) {
+      filter.categories = { $in: categoryNames };
+    } else {
+      // fallback: nếu chưa cấu hình primaryGenres cho Category, dùng field primary_genre cũ
+      filter.primary_genre = genre;
+    }
+
+    const books = await Book.find(filter).sort({ rating: -1 });
 
     return books;
   }
@@ -342,10 +364,10 @@ class BookService {
         sort = { rating: -1 };
         break;
       case 'newest':
-        sort = { createdAt: -1 };
+        sort = { year: -1, createdAt: -1 };
         break;
       case 'oldest':
-        sort = { createdAt: 1 };
+        sort = { year: 1, createdAt: 1 };
         break;
       case 'title':
         sort = { title: 1 };

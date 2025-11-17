@@ -1,9 +1,8 @@
 const bookService = require('../services/books.service.js');
 const ApiResponse = require('../utils/apiResponse.js');
 
-
 class BookController {
-//GET /api/books
+  //GET /api/books
   async getAllBooks(req, res, next) {
     try {
       const result = await bookService.getAllBooks(req.query);
@@ -20,7 +19,7 @@ class BookController {
     }
   }
 
-//GET /api/books/:id
+  //GET /api/books/:id
   async getBookById(req, res, next) {
     try {
       const book = await bookService.getBookById(req.params.id);
@@ -33,7 +32,7 @@ class BookController {
     }
   }
 
-//POST /api/books
+  //POST /api/books
   async createBook(req, res, next) {
     try {
       const book = await bookService.createBook(req.body);
@@ -46,7 +45,7 @@ class BookController {
     }
   }
 
-//PUT /api/books/:id
+  //PUT /api/books/:id
   async updateBook(req, res, next) {
     try {
       const book = await bookService.updateBook(req.params.id, req.body);
@@ -59,7 +58,7 @@ class BookController {
     }
   }
 
-//DELETE /api/books/:id
+  //DELETE /api/books/:id
   async deleteBook(req, res, next) {
     try {
       await bookService.deleteBook(req.params.id);
@@ -72,7 +71,7 @@ class BookController {
     }
   }
 
-//GET /api/books/genre/:genre
+  //GET /api/books/genre/:genre
   async getBooksByGenre(req, res, next) {
     try {
       const books = await bookService.getBooksByGenre(req.params.genre);
@@ -85,7 +84,7 @@ class BookController {
     }
   }
 
-//GET /api/books/category/:category
+  //GET /api/books/category/:category
   async getBooksByCategory(req, res, next) {
     try {
       const books = await bookService.getBooksByCategory(req.params.category);
@@ -98,7 +97,7 @@ class BookController {
     }
   }
 
-//GET /api/books/tags/:tag
+  //GET /api/books/tags/:tag
   async getBooksByTag(req, res, next) {
     try {
       const books = await bookService.getBooksByTag(req.params.tag);
@@ -111,7 +110,7 @@ class BookController {
     }
   }
 
-//GET /api/books/author/:authorId
+  //GET /api/books/author/:authorId
   async getBooksByAuthor(req, res, next) {
     try {
       const books = await bookService.getBooksByAuthor(req.params.authorId);
@@ -124,7 +123,7 @@ class BookController {
     }
   }
 
-//GET /api/books/stats/overview
+  //GET /api/books/stats/overview
   async getStatsOverview(req, res, next) {
     try {
       const stats = await bookService.getStatsOverview();
@@ -137,7 +136,7 @@ class BookController {
     }
   }
 
-//GET /api/books/top-rated-by-category
+  //GET /api/books/top-rated-by-category
   async getTopRatedByCategory(req, res, next) {
     try {
       const result = await bookService.getTopRatedByCategory();
@@ -150,7 +149,7 @@ class BookController {
     }
   }
 
-//PATCH /api/books/:id/status
+  //PATCH /api/books/:id/status
   async updateStatus(req, res, next) {
     try {
       const book = await bookService.updateStatus(req.params.id, req.body.status);
@@ -163,7 +162,7 @@ class BookController {
     }
   }
 
-//PATCH /api/books/:id/rating
+  //PATCH /api/books/:id/rating
   async updateRating(req, res, next) {
     try {
       const book = await bookService.updateRating(req.params.id, req.body.rating);
@@ -176,7 +175,7 @@ class BookController {
     }
   }
 
-//PATCH /api/books/:id/featured
+  //PATCH /api/books/:id/featured
   async toggleFeatured(req, res, next) {
     try {
       const book = await bookService.toggleFeatured(req.params.id, req.body.featured);
@@ -189,7 +188,7 @@ class BookController {
     }
   }
 
-//POST /api/books/:id/download
+  //POST /api/books/:id/download
   async incrementDownload(req, res, next) {
     try {
       const result = await bookService.incrementDownload(req.params.id);
@@ -202,10 +201,10 @@ class BookController {
     }
   }
 
-//GET /api/books/metadata/genres
-  getPrimaryGenres(req, res, next) {
+  //GET /api/books/metadata/genres
+  async getPrimaryGenres(req, res, next) {
     try {
-      const genres = bookService.getPrimaryGenres();
+      const genres = await bookService.getPrimaryGenres();
 
       res.json(
         ApiResponse.success(genres, 'Genres retrieved successfully')
@@ -215,7 +214,7 @@ class BookController {
     }
   }
 
-//GET /api/books/metadata/categories
+  //GET /api/books/metadata/categories
   getAllCategories(req, res, next) {
     try {
       const categories = bookService.getAllCategories();
@@ -228,7 +227,7 @@ class BookController {
     }
   }
 
-//GET /api/books/metadata/categories/:genre
+  //GET /api/books/metadata/categories/:genre
   getCategoriesByGenre(req, res, next) {
     try {
       const categories = bookService.getCategoriesByGenre(req.params.genre);
@@ -241,7 +240,7 @@ class BookController {
     }
   }
 
-//GET /api/books/metadata/tags
+  //GET /api/books/metadata/tags
   getAllTags(req, res, next) {
     try {
       const tags = bookService.getAllTags();
@@ -254,7 +253,7 @@ class BookController {
     }
   }
 
-//GET /api/books/metadata/tags/:genre
+  //GET /api/books/metadata/tags/:genre
   getTagsByGenre(req, res, next) {
     try {
       const tags = bookService.getTagsByGenre(req.params.genre);
@@ -267,7 +266,7 @@ class BookController {
     }
   }
 
-//GET /api/books/search
+  //GET /api/books/search
   async searchBooks(req, res, next) {
     try {
       const result = await bookService.searchBooks(req.query);
@@ -284,7 +283,7 @@ class BookController {
     }
   }
 
-//GET /api/books/featured
+  //GET /api/books/featured
   async getFeaturedBooks(req, res, next) {
     try {
       const limit = parseInt(req.query.limit) || 10;
@@ -298,7 +297,7 @@ class BookController {
     }
   }
 
-//GET /api/books/:id/related
+  //GET /api/books/:id/related
   async getRelatedBooks(req, res, next) {
     try {
       const limit = parseInt(req.query.limit) || 5;
