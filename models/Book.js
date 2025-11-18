@@ -1,251 +1,8 @@
 const mongoose = require('mongoose');
+const Category = require('./Category');
+const Tag = require('./Tag');
+const PrimaryGenre = require('./Primarygenre');
 
-const PRIMARY_GENRES = [
-  'Psychology',
-  'Philosophy', 
-  'Literature',
-  'Psychiatry',
-  'Thriller & Horror',
-  'Social Sciences',
-  'Religion & Spirituality',
-  'Science',
-  'Business & Economics'
-];
-
-const CATEGORIES = {
-  Psychology: [
-    'Psychological Fiction',
-    'Psychoanalysis',
-    'Analytical Psychology',
-    'Clinical Psychology',
-    'Cognitive Psychology',
-    'Existential Psychology',
-    'Social Psychology',
-    'Behavioral Psychology',
-    'Depth Psychology',
-    'Neuropsychology',
-    'Developmental Psychology'
-  ],
-  
-  Philosophy: [
-    'Existentialism',
-    'Phenomenology',
-    'Metaphysics',
-    'Epistemology',
-    'Ethics',
-    'Political Philosophy',
-    'Moral Philosophy',
-    'Eastern Philosophy',
-    'Western Philosophy',
-    'Ancient Philosophy',
-    'Modern Philosophy',
-    'Philosophy of Mind',
-    'Philosophy of Language',
-    'Absurdism',
-    'Stoicism',
-    'Taoism',
-    'Buddhism',
-    'Rationalism',
-    'Empiricism',
-    'Idealism',
-    'Skepticism'
-  ],
-  
-  Literature: [
-    'Classic Literature',
-    'Modern Literature',
-    'Psychological Fiction',
-    'Existential Fiction',
-    'Autobiographical Novel',
-    'Epistolary Novel',
-    'Gothic Literature',
-    'Dystopian Literature',
-    'Magical Realism',
-    'Modernist Fiction',
-    'Postmodern Fiction',
-    'Romantic Literature',
-    'Feminist Literature',
-    'Coming-of-Age',
-    'Dark Academia',
-    'Symbolism',
-    'Surrealism'
-  ],
-  
-  Psychiatry: [
-    'Psychopathology',
-    'Mental Health',
-    'Bipolar Disorder',
-    'Schizophrenia',
-    'Depression Studies',
-    'Addiction',
-    'Psychiatric Treatment'
-  ],
-  
-  'Thriller & Horror': [
-    'Psychological Thriller',
-    'Psychological Horror',
-    'Suspense',
-    'Crime Fiction'
-  ],
-  
-  'Social Sciences': [
-    'Sociology',
-    'Anthropology',
-    'Cultural Studies',
-    'History',
-    'Gender Studies',
-    'Political Science'
-  ],
-  
-  'Religion & Spirituality': [
-    'Theology',
-    'Buddhist Philosophy',
-    'Christian Theology',
-    'Spiritual Literature',
-    'Mysticism'
-  ],
-  
-  Science: [
-    'Neuroscience',
-    'Cognitive Science',
-    'Physics',
-    'Biology',
-    'Science and Spirituality'
-  ],
-  
-  'Business & Economics': [
-    'Behavioral Economics',
-    'Finance',
-    'Decision Science'
-  ]
-};
-
-const TAGS = {
-  Psychology: [
-    'depression',
-    'anxiety',
-    'trauma',
-    'obsession',
-    'alienation',
-    'identity-crisis',
-    'mental-illness',
-    'consciousness',
-    'memory',
-    'dream-studies',
-    'instinct-theory',
-    'cognitive-decline',
-    'psychological-fiction',
-    'psychoanalysis',
-    'behavioral-science'
-  ],
-  
-  Philosophy: [
-    'existential-crisis',
-    'meaning-of-life',
-    'free-will',
-    'consciousness',
-    'being-and-nothingness',
-    'absurdity',
-    'nihilism',
-    'ethics',
-    'morality',
-    'metaphysics',
-    'epistemology',
-    'ontology',
-    'phenomenology',
-    'existentialism',
-    'stoicism',
-    'taoism',
-    'buddhism'
-  ],
-  
-  Literature: [
-    'narrative',
-    'character-study',
-    'stream-of-consciousness',
-    'introspection',
-    'confession',
-    'classic-literature',
-    'modern-literature',
-    'feminist-literature',
-    'coming-of-age',
-    'symbolism',
-    'surrealism',
-    'magical-realism',
-    'dark-academia'
-  ],
-  
-  Psychiatry: [
-    'madness',
-    'insanity',
-    'mental-breakdown',
-    'institutionalization',
-    'diagnosis',
-    'bipolar-disorder',
-    'schizophrenia',
-    'addiction',
-    'psychopathology'
-  ],
-  
-  'Thriller & Horror': [
-    'murder',
-    'violence',
-    'paranoia',
-    'captivity',
-    'obsession',
-    'psychological-manipulation',
-    'suspense',
-    'crime',
-    'horror'
-  ],
-  
-  'Social Sciences': [
-    'society',
-    'culture',
-    'power-structures',
-    'inequality',
-    'conformity',
-    'social-order',
-    'history',
-    'anthropology',
-    'gender-studies'
-  ],
-  
-  'Religion & Spirituality': [
-    'faith',
-    'salvation',
-    'enlightenment',
-    'meditation',
-    'prayer',
-    'theology',
-    'mysticism',
-    'spiritual-practice',
-    'buddhist-philosophy'
-  ],
-  
-  Science: [
-    'brain',
-    'consciousness',
-    'quantum-physics',
-    'evolution',
-    'neuroscience',
-    'cognitive-science',
-    'biology'
-  ],
-  
-  'Business & Economics': [
-    'money-psychology',
-    'investment',
-    'risk',
-    'behavioral-bias',
-    'finance',
-    'decision-making',
-    'behavioral-economics'
-  ]
-};
-
-
-// Cover Image Cloud Schema
 const coverImageCloudSchema = new mongoose.Schema({
   url: {
     type: String,
@@ -350,8 +107,6 @@ const structureSchema = new mongoose.Schema({
   }
 }, { _id: false });
 
-// ============= MAIN BOOK SCHEMA =============
-
 const bookSchema = new mongoose.Schema({
   book_id: {
     type: String,
@@ -398,8 +153,7 @@ const bookSchema = new mongoose.Schema({
   
   primary_genre: {
     type: String,
-    enum: PRIMARY_GENRES,
-    required: true,
+    required: false,
     index: true
   },
   
@@ -495,7 +249,6 @@ const bookSchema = new mongoose.Schema({
   collection: 'books'
 });
 
-
 bookSchema.index({ title: 'text', author: 'text', blurb: 'text' });
 bookSchema.index({ primary_genre: 1, status: 1 });
 bookSchema.index({ categories: 1 });
@@ -505,57 +258,80 @@ bookSchema.index({ rating: -1 });
 bookSchema.index({ view_count: -1 });
 bookSchema.index({ createdAt: -1 });
 
-
-bookSchema.virtual('available_categories').get(function() {
-  return CATEGORIES[this.primary_genre] || [];
-});
-
-bookSchema.virtual('available_tags').get(function() {
-  return TAGS[this.primary_genre] || [];
-});
-
-
-bookSchema.pre('save', function(next) {
-  if (this.primary_genre && this.categories) {
-    const validCategories = CATEGORIES[this.primary_genre] || [];
-    const invalidCategories = this.categories.filter(cat => !validCategories.includes(cat));
-    
-    if (invalidCategories.length > 0) {
-      return next(new Error(`Invalid categories for genre "${this.primary_genre}": ${invalidCategories.join(', ')}`));
+bookSchema.pre('save', async function(next) {
+  try {
+    if (this.categories && this.categories.length > 0) {
+      
+      const validation = await Category.validateCategoriesSameGenre(this.categories);
+      
+      if (!validation.valid) {
+        return next(new Error(validation.error));
+      }
+      
+      if (!this.primary_genre) {
+        this.primary_genre = validation.primary_genre;
+        console.log(`✅ Auto-set primary_genre to "${this.primary_genre}" for book: ${this.book_id}`);
+      }
+      
+      if (this.primary_genre !== validation.primary_genre) {
+        return next(new Error(
+          `Book primary_genre is "${this.primary_genre}" but categories belong to "${validation.primary_genre}"`
+        ));
+      }
     }
+    
+    if (this.primary_genre) {
+      const isValidGenre = await PrimaryGenre.isValidGenre(this.primary_genre);
+      if (!isValidGenre) {
+        console.warn(`⚠️  primary_genre "${this.primary_genre}" not found in primary_genres collection for book ${this.book_id}`);
+      }
+    }
+    
+    if (this.tags && this.tags.length > 0) {
+      for (const tag of this.tags) {
+        const isValid = await Tag.isValidTag(tag);
+        if (!isValid) {
+          console.warn(`⚠️  Tag "${tag}" not found in tags collection for book ${this.book_id}`);
+        }
+      }
+    }
+    
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 });
 
 
-bookSchema.statics.getPrimaryGenres = function() {
-  return PRIMARY_GENRES;
+bookSchema.statics.getPrimaryGenres = async function() {
+  return await Category.getAllPrimaryGenres();
 };
 
-bookSchema.statics.getCategoriesByGenre = function(genre) {
-  return CATEGORIES[genre] || [];
+bookSchema.statics.getCategoriesByGenre = async function(genre) {
+  return await Category.getCategoryNamesForPrimaryGenre(genre);
 };
 
-bookSchema.statics.getTagsByGenre = function(genre) {
-  return TAGS[genre] || [];
+bookSchema.statics.getAllCategories = async function() {
+  return await Category.getAllCategoriesGrouped();
 };
 
-bookSchema.statics.getAllCategories = function() {
-  return CATEGORIES;
+bookSchema.statics.getTagsByGenre = async function(genre) {
+  return await Tag.getTagNamesForPrimaryGenre(genre);
 };
 
-bookSchema.statics.getAllTags = function() {
-  return TAGS;
+bookSchema.statics.getAllTags = async function() {
+  return await Tag.getAllTagsGrouped();
 };
 
-bookSchema.methods.isValidCategory = function(category) {
-  const validCategories = CATEGORIES[this.primary_genre] || [];
+
+bookSchema.methods.isValidCategory = async function(category) {
+  if (!this.primary_genre) return false;
+  const validCategories = await Category.getCategoryNamesForPrimaryGenre(this.primary_genre);
   return validCategories.includes(category);
 };
 
-bookSchema.methods.isValidTag = function(tag) {
-  const validTags = TAGS[this.primary_genre] || [];
-  return validTags.includes(tag);
+bookSchema.methods.isValidTag = async function(tag) {
+  return await Tag.isValidTag(tag);
 };
 
 bookSchema.methods.incrementViewCount = function() {
@@ -568,11 +344,4 @@ bookSchema.methods.incrementDownloadCount = function() {
   return this.save();
 };
 
-// ============= EXPORT =============
-
-const Book = mongoose.model('Book', bookSchema);
-
-module.exports = Book;
-module.exports.PRIMARY_GENRES = PRIMARY_GENRES;
-module.exports.CATEGORIES = CATEGORIES;
-module.exports.TAGS = TAGS;
+module.exports = mongoose.model('Book', bookSchema);

@@ -109,4 +109,78 @@ categorySchema.statics.getAllPrimaryGenres = async function() {
   return Array.from(set).sort();
 };
 
+// Get all categories grouped by primary genre
+categorySchema.statics.getAllCategoriesGrouped = async function() {
+  const categories = await this.find({ isActive: true });
+  
+  const grouped = {};
+  categories.forEach(cat => {
+    if (cat.primary_genre) {
+      if (!grouped[cat.primary_genre]) {
+        grouped[cat.primary_genre] = [];
+      }
+      if (!grouped[cat.primary_genre].includes(cat.name)) {
+        grouped[cat.primary_genre].push(cat.name);
+      }
+    }
+  });
+  
+  return grouped;
+};
+
+// Get primary genre by category name
+categorySchema.statics.getPrimaryGenreByCategory = async function(categoryName) {
+  const category = await this.findOne({ name: categoryName, isActive: true });
+  return category ? category.primary_genre : null;
+};
+
+// Validate categories belong to same primary genre
+categorySchema.statics.validateCategoriesSameGenre = async function(categoryNames) {
+  if (!categoryNames || categoryNames.length === 0) {
+    return { valid: false, error: 'No categories provided' };
+  }
+
+  const categories = await this.find({ 
+    name: { $in: categoryNames },
+    isActive: true
+  });
+
+  if (categories.length !== categoryNames.length) {
+    const found = categories.map(c => c.name);
+    const missing = categoryNames.filter(c => !found.includes(c));
+    return { 
+      valid: false, 
+      error: `Invalid categories: ${missing.join(', ')}` 
+    };
+  }
+
+  // Get unique primary genres
+  const primaryGenres = [...new Set(categories.map(c => c.primary_genre).filter(Boolean))];
+  
+  if (primaryGenres.length > 1) {
+    return { 
+      valid: false, 
+      error: `Categories belong to different primary genres: ${primaryGenres.join(', ')}`,
+      primaryGenres 
+    };
+  }
+
+  if (primaryGenres.length === 0) {
+    return {
+      valid: false,
+      error: 'Categories do not have primary_genre set'
+    };
+  }
+
+  return { 
+    valid: true, 
+    primary_genre: primaryGenres[0] 
+  };
+};
+
+categorySchema.statics.isValidCategory = async function(categoryName) {
+  const count = await this.countDocuments({ name: categoryName, isActive: true });
+  return count > 0;
+};
+
 module.exports = mongoose.model('Category', categorySchema);
