@@ -3,6 +3,55 @@ const Category = require('../models/Category');
 const ApiError = require('../utils/apiError');
 
 class BookService {
+  // Helper method to calculate primary_genre from categories
+  async _calculatePrimaryGenre(categories) {
+    if (!categories || categories.length === 0) return null;
+
+    try {
+      const categoryDocs = await Category.find({ 
+        name: { $in: categories },
+        isActive: true
+      }).select('primary_genre');
+
+      const genreCount = {};
+      categoryDocs.forEach(cat => {
+        if (cat.primary_genre) {
+          genreCount[cat.primary_genre] = (genreCount[cat.primary_genre] || 0) + 1;
+        }
+      });
+
+      if (Object.keys(genreCount).length === 0) return null;
+
+      // Return the most common genre
+      const dominantGenre = Object.entries(genreCount)
+        .sort((a, b) => b[1] - a[1])[0][0];
+
+      return dominantGenre;
+    } catch (error) {
+      console.error('Error calculating primary_genre:', error);
+      return null;
+    }
+  }
+
+  // Helper to add primary_genre to book object
+  async _enrichBookWithGenre(book) {
+    if (!book) return book;
+    
+    const bookObj = book.toObject ? book.toObject() : book;
+    
+    // If primary_genre is missing or empty, calculate it
+    if (!bookObj.primary_genre && bookObj.categories) {
+      bookObj.primary_genre = await this._calculatePrimaryGenre(bookObj.categories);
+    }
+    
+    return bookObj;
+  }
+
+  // Helper to enrich multiple books
+  async _enrichBooksWithGenre(books) {
+    return Promise.all(books.map(book => this._enrichBookWithGenre(book)));
+  }
+
   async getAllBooks(queryParams) {
     const {
       page = 1,
@@ -69,8 +118,11 @@ class BookService {
 
     const total = await Book.countDocuments(filter);
 
+    // Enrich books with primary_genre
+    const enrichedBooks = await this._enrichBooksWithGenre(books);
+
     return {
-      books,
+      books: enrichedBooks,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -87,16 +139,21 @@ class BookService {
       throw ApiError.notFound('Book not found');
     }
 
-    await book.incrementViewCount();
+    // Increment view count without triggering pre-save
+    await Book.updateOne(
+      { book_id: bookId },
+      { $inc: { view_count: 1 } }
+    );
 
-    return book;
+    // Enrich with primary_genre
+    return await this._enrichBookWithGenre(book);
   }
 
   async createBook(bookData) {
     try {
       const book = new Book(bookData);
       await book.save();
-      return book;
+      return await this._enrichBookWithGenre(book);
     } catch (error) {
       if (error.code === 11000) {
         throw ApiError.conflict('Book with this ID or ISBN already exists');
@@ -116,7 +173,7 @@ class BookService {
       throw ApiError.notFound('Book not found');
     }
 
-    return book;
+    return await this._enrichBookWithGenre(book);
   }
 
   async deleteBook(bookId) {
@@ -141,8 +198,7 @@ class BookService {
     }
 
     const books = await Book.find(filter).sort({ rating: -1 });
-
-    return books;
+    return await this._enrichBooksWithGenre(books);
   }
 
   async getBooksByCategory(category) {
@@ -151,7 +207,7 @@ class BookService {
       status: 'published'
     }).sort({ rating: -1 });
 
-    return books;
+    return await this._enrichBooksWithGenre(books);
   }
 
   async getBooksByTag(tag) {
@@ -160,7 +216,7 @@ class BookService {
       status: 'published'
     }).sort({ rating: -1 });
 
-    return books;
+    return await this._enrichBooksWithGenre(books);
   }
 
   async getBooksByAuthor(authorId) {
@@ -169,7 +225,7 @@ class BookService {
       status: 'published'
     }).sort({ year: -1 });
 
-    return books;
+    return await this._enrichBooksWithGenre(books);
   }
 
   async getStatsOverview() {
@@ -225,7 +281,9 @@ class BookService {
               title: '$title',
               author: '$author',
               rating: '$rating',
-              coverImage_cloud: '$coverImage_cloud'
+              coverImage_cloud: '$coverImage_cloud',
+              primary_genre: '$primary_genre',
+              categories: '$categories'
             }
           }
         }
@@ -253,7 +311,7 @@ class BookService {
       throw ApiError.notFound('Book not found');
     }
 
-    return book;
+    return await this._enrichBookWithGenre(book);
   }
 
   async updateRating(bookId, rating) {
@@ -267,7 +325,7 @@ class BookService {
       throw ApiError.notFound('Book not found');
     }
 
-    return book;
+    return await this._enrichBookWithGenre(book);
   }
 
   async toggleFeatured(bookId, featured) {
@@ -281,18 +339,20 @@ class BookService {
       throw ApiError.notFound('Book not found');
     }
 
-    return book;
+    return await this._enrichBookWithGenre(book);
   }
 
   async incrementDownload(bookId) {
-    const book = await Book.findOne({ book_id: bookId });
+    const result = await Book.updateOne(
+      { book_id: bookId },
+      { $inc: { download_count: 1 } }
+    );
 
-    if (!book) {
+    if (result.matchedCount === 0) {
       throw ApiError.notFound('Book not found');
     }
 
-    await book.incrementDownloadCount();
-
+    const book = await Book.findOne({ book_id: bookId });
     return {
       download_count: book.download_count
     };
@@ -336,7 +396,7 @@ class BookService {
     const filter = { status: 'published' };
 
     if (keyword) {
-      const searchRegex = new RegExp(keyword, 'i'); // case-insensitive
+      const searchRegex = new RegExp(keyword, 'i');
       
       filter.$or = [
         { title: searchRegex },
@@ -376,7 +436,6 @@ class BookService {
       if (maxRating) filter.rating.$lte = parseFloat(maxRating);
     }
 
-    // Sort
     let sort = {};
     switch (sortBy) {
       case 'relevance':
@@ -398,15 +457,7 @@ class BookService {
         sort = { rating: -1 };
     }
 
-    // Execute query
     const skip = (page - 1) * limit;
-    
-    // Log để debug
-    console.log('=== SEARCH DEBUG ===');
-    console.log('Keyword:', keyword);
-    console.log('Filter:', JSON.stringify(filter, null, 2));
-    console.log('Sort:', sort);
-    console.log('Page:', page, 'Limit:', limit);
     
     const books = await Book.find(filter)
       .sort(sort)
@@ -415,11 +466,10 @@ class BookService {
 
     const total = await Book.countDocuments(filter);
 
-    console.log(`Search found ${total} books for keyword: "${keyword}"`);
-    console.log('===================\n');
+    const enrichedBooks = await this._enrichBooksWithGenre(books);
 
     return {
-      books,
+      books: enrichedBooks,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -437,7 +487,7 @@ class BookService {
       .sort({ rating: -1 })
       .limit(limit);
 
-    return books;
+    return await this._enrichBooksWithGenre(books);
   }
 
   async getRelatedBooks(bookId, limit = 5) {
@@ -459,7 +509,7 @@ class BookService {
       .limit(limit)
       .sort({ rating: -1 });
 
-    return relatedBooks;
+    return await this._enrichBooksWithGenre(relatedBooks);
   }
 
   async getPopularBooks(limit = 10) {
@@ -473,7 +523,7 @@ class BookService {
       })
       .limit(limit);
 
-    return books;
+    return await this._enrichBooksWithGenre(books);
   }
 }
 

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Detail Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .book-detail {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .book-info {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .info-row {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .label {
+            font-weight: bold;
+            color: #666;
+            min-width: 150px;
+        }
+        .value {
+            color: #333;
+            flex: 1;
+        }
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .categories, .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .badge {
+            background: #007bff;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+        .tag-badge {
+            background: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="book-detail">
+        <h1>Book Detail Test</h1>
+        
+        <div>
+            <label for="bookIdInput">Enter Book ID:</label>
+            <input 
+                type="text" 
+                id="bookIdInput" 
+                value="BK100" 
+                style="padding: 8px; margin: 0 10px; width: 150px;"
+            >
+            <button onclick="loadBook()" style="padding: 8px 20px; cursor: pointer;">
+                Load Book
+            </button>
+        </div>
+
+        <div id="bookContent">
+            <div class="loading">Enter a book ID and click Load Book</div>
+        </div>
+    </div>
+
+    <script>
+        // Lấy book_id từ URL nếu có
+        const urlParams = new URLSearchParams(window.location.search);
+        const bookIdFromUrl = urlParams.get('book_id');
+        
+        if (bookIdFromUrl) {
+            document.getElementById('bookIdInput').value = bookIdFromUrl;
+            loadBook();
+        }
+
+        async function loadBook() {
+            const bookId = document.getElementById('bookIdInput').value.trim();
+            const contentDiv = document.getElementById('bookContent');
+            
+            if (!bookId) {
+                contentDiv.innerHTML = '<div class="error">Please enter a book ID</div>';
+                return;
+            }
+
+            contentDiv.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                // Gọi API
+                const response = await fetch(`http://localhost:3000/api/books/${bookId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                const book = result.data;
+
+                // Render book info
+                contentDiv.innerHTML = `
+                    <h2>${book.title}</h2>
+                    
+                    <div class="book-info">
+                        <div class="info-row">
+                            <span class="label">Book ID:</span>
+                            <span class="value">${book.book_id}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="label">Author:</span>
+                            <span class="value">${book.author}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="label">Year:</span>
+                            <span class="value">${book.year}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="label">Publisher:</span>
+                            <span class="value">${book.publisher}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="label">Primary Genre:</span>
+                            <span class="value">${book.primary_genre || 'N/A'}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="label">Categories:</span>
+                            <div class="categories">
+                                ${book.categories.map(cat => 
+                                    `<span class="badge">${cat}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        
+                        ${book.tags && book.tags.length > 0 ? `
+                        <div class="info-row">
+                            <span class="label">Tags:</span>
+                            <div class="tags">
+                                ${book.tags.map(tag => 
+                                    `<span class="badge tag-badge">${tag}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="info-row">
+                            <span class="label">Rating:</span>
+                            <span class="value">⭐ ${book.rating.toFixed(1)} / 5.0</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="label">Pages:</span>
+                            <span class="value">${book.pageCount}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="label">Status:</span>
+                            <span class="value">${book.status}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="label">Views:</span>
+                            <span class="value">${book.view_count}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="label">Downloads:</span>
+                            <span class="value">${book.download_count}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="label">Punchline:</span>
+                            <span class="value">${book.punchline}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span class="label">Description:</span>
+                            <span class="value">${book.blurb}</span>
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <strong>Error loading book:</strong><br>
+                        ${error.message}
+                        <br><br>
+                        <strong>Troubleshooting:</strong>
+                        <ul>
+                            <li>Make sure your backend server is running on http://localhost:3000</li>
+                            <li>Check if book ID "${bookId}" exists in database</li>
+                            <li>Check browser console for CORS errors</li>
+                        </ul>
+                    </div>
+                `;
+                console.error('Error:', error);
+            }
+        }
+
+        // Load book when Enter is pressed
+        document.getElementById('bookIdInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loadBook();
+            }
+        });
+    </script>
+</body>
+</html>
