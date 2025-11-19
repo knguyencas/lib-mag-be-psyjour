@@ -9,6 +9,8 @@ var usersRouter = require('./routes/users');
 var booksRouter = require('./routes/books.route');
 var authorsRouter = require('./routes/authors.route.js');
 const epubSplitRoute = require('./routes/epubSplit.route');
+const authRoutes = require('./routes/auth');
+
 
 var app = express();
 var swaggerUi = require('swagger-ui-express');
@@ -27,6 +29,7 @@ app.use('/users', usersRouter);
 app.use('/api/books', booksRouter);
 app.use('/api/authors', authorsRouter);
 app.use('/api', epubSplitRoute);
+app.use('/api/auth', authRoutes);
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
