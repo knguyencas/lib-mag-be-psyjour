@@ -7,9 +7,9 @@ var cors = require('cors');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var booksRouter = require('./routes/books.route');
-var authorsRouter = require('./routes/authors.route.js');
+var authorsRouter = require('./routes/authors.route');
 const epubSplitRoute = require('./routes/epubSplit.route');
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./routes/auth.route');
 
 
 var app = express();
