@@ -10,16 +10,41 @@ class AdminUserService {
       throw ApiError.badRequest('Username and password are required');
     }
 
+    if (username.trim().length < 3) {
+      throw ApiError.badRequest('Username must be at least 3 characters');
+    }
+
+    if (password.length < 8) {
+      throw ApiError.badRequest('Password must be at least 8 characters');
+    }
+
+    const creator = await User.findById(creatorId);
+    if (!creator || creator.role !== 'super_admin') {
+      throw ApiError.forbidden('Only super_admin can create admin users');
+    }
+
     const trimmedUsername = username.trim();
-    const normalizedEmail = email ? email.toLowerCase().trim() : null;
+    let normalizedEmail = null;
 
-    const orCond = [{ username: trimmedUsername }];
-    if (normalizedEmail) orCond.push({ email: normalizedEmail });
+    if (email && email.trim()) {
+      normalizedEmail = email.toLowerCase().trim();
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(normalizedEmail)) {
+        throw ApiError.badRequest('Invalid email format');
+      }
+    }
 
-    const existing = await User.findOne({ $or: orCond });
+    const existingUsername = await User.findOne({ username: trimmedUsername });
+    if (existingUsername) {
+      throw ApiError.conflict('Username already exists');
+    }
 
-    if (existing) {
-      throw ApiError.conflict('Username or email already exists');
+    if (normalizedEmail) {
+      const existingEmail = await User.findOne({ email: normalizedEmail });
+      if (existingEmail) {
+        throw ApiError.conflict('Email already exists');
+      }
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -46,6 +71,43 @@ class AdminUserService {
       role: newAdmin.role,
       createdAt: newAdmin.createdAt
     };
+  }
+
+  async getAllAdmins(requesterId) {
+    const requester = await User.findById(requesterId);
+    if (!requester || requester.role !== 'super_admin') {
+      throw ApiError.forbidden('Only super_admin can view admin list');
+    }
+
+    const admins = await User.find({ role: 'admin' })
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    return admins;
+  }
+
+  async deleteAdmin(requesterId, adminId) {
+    const requester = await User.findById(requesterId);
+    if (!requester || requester.role !== 'super_admin') {
+      throw ApiError.forbidden('Only super_admin can delete admin users');
+    }
+
+    const adminToDelete = await User.findById(adminId);
+    if (!adminToDelete) {
+      throw ApiError.notFound('Admin user not found');
+    }
+
+    if (adminToDelete.role === 'super_admin') {
+      throw ApiError.forbidden('Cannot delete super_admin');
+    }
+
+    if (adminToDelete.role !== 'admin') {
+      throw ApiError.badRequest('Can only delete admin users');
+    }
+
+    await User.findByIdAndDelete(adminId);
+
+    return { message: 'Admin user deleted successfully' };
   }
 }
 
