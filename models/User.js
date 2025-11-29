@@ -5,13 +5,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true
+    trim: true,
+    minlength: 3
   },
 
   email: {
     type: String,
     trim: true,
-    lowercase: true
+    lowercase: true,
+    sparse: true,
+    unique: true
   },
 
   password: {
@@ -45,5 +48,8 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+userSchema.index({ username: 1 });
+userSchema.index({ email: 1 });
 
 module.exports = mongoose.model('User', userSchema);
