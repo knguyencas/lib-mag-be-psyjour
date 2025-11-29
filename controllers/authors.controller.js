@@ -1,19 +1,15 @@
 const Author = require('../models/Author');
 const Book = require('../models/Book');
 
-// @desc    Get all authors
-// @route   GET /api/authors
-// @access  Public
+// GET /api/authors
 exports.getAllAuthors = async (req, res) => {
   try {
     const { page = 1, limit = 10, search, nationality, sortBy = 'name', order = 'asc' } = req.query;
     
     const query = {};
     
-    // Filter by nationality
     if (nationality) query.nationality = nationality;
     
-    // Search by name
     if (search) {
       query.name = { $regex: search, $options: 'i' };
     }
@@ -44,9 +40,7 @@ exports.getAllAuthors = async (req, res) => {
   }
 };
 
-// @desc    Get single author by ID
-// @route   GET /api/authors/:id
-// @access  Public
+// GET /api/authors/:id
 exports.getAuthorById = async (req, res) => {
   try {
     const author = await Author.findById(req.params.id);
@@ -58,7 +52,6 @@ exports.getAuthorById = async (req, res) => {
       });
     }
     
-    // Get author's books
     const books = await Book.find({ author: req.params.id })
       .populate('category', 'name slug');
     
@@ -78,9 +71,7 @@ exports.getAuthorById = async (req, res) => {
   }
 };
 
-// @desc    Create new author
-// @route   POST /api/authors
-// @access  Private (add authentication middleware as needed)
+// POST /api/authors
 exports.createAuthor = async (req, res) => {
   try {
     const author = await Author.create(req.body);
@@ -106,9 +97,7 @@ exports.createAuthor = async (req, res) => {
   }
 };
 
-// @desc    Update author
 // @route   PUT /api/authors/:id
-// @access  Private
 exports.updateAuthor = async (req, res) => {
   try {
     const author = await Author.findByIdAndUpdate(
@@ -141,9 +130,7 @@ exports.updateAuthor = async (req, res) => {
   }
 };
 
-// @desc    Delete author
-// @route   DELETE /api/authors/:id
-// @access  Private
+// DELETE /api/authors/:id
 exports.deleteAuthor = async (req, res) => {
   try {
     const author = await Author.findById(req.params.id);
@@ -155,7 +142,6 @@ exports.deleteAuthor = async (req, res) => {
       });
     }
     
-    // Check if author has books
     const booksCount = await Book.countDocuments({ author: req.params.id });
     
     if (booksCount > 0) {
@@ -180,9 +166,7 @@ exports.deleteAuthor = async (req, res) => {
   }
 };
 
-// @desc    Get author statistics
-// @route   GET /api/authors/:id/stats
-// @access  Public
+// GET /api/authors/:id/stats
 exports.getAuthorStats = async (req, res) => {
   try {
     const author = await Author.findById(req.params.id);
@@ -233,9 +217,7 @@ exports.getAuthorStats = async (req, res) => {
   }
 };
 
-// @desc    Get authors by nationality
-// @route   GET /api/authors/nationality/:nationality
-// @access  Public
+// GET /api/authors/nationality/:nationality
 exports.getAuthorsByNationality = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
@@ -263,9 +245,7 @@ exports.getAuthorsByNationality = async (req, res) => {
   }
 };
 
-// @desc    Search authors
-// @route   GET /api/authors/search
-// @access  Public
+// GET /api/authors/search
 exports.searchAuthors = async (req, res) => {
   try {
     const { query, nationality, limit = 10 } = req.query;
@@ -306,9 +286,7 @@ exports.searchAuthors = async (req, res) => {
   }
 };
 
-// @desc    Get top authors by book count
-// @route   GET /api/authors/top-by-books
-// @access  Public
+// GET /api/authors/top-by-books
 exports.getTopAuthorsByBookCount = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
@@ -360,9 +338,7 @@ exports.getTopAuthorsByBookCount = async (req, res) => {
   }
 };
 
-// @desc    Get top authors by rating
-// @route   GET /api/authors/top-by-rating
-// @access  Public
+// GET /api/authors/top-by-rating
 exports.getTopAuthorsByRating = async (req, res) => {
   try {
     const { limit = 10, minBooks = 1 } = req.query;
@@ -415,9 +391,7 @@ exports.getTopAuthorsByRating = async (req, res) => {
   }
 };
 
-// @desc    Get all unique nationalities
-// @route   GET /api/authors/nationalities
-// @access  Public
+// GET /api/authors/nationalities
 exports.getAllNationalities = async (req, res) => {
   try {
     const nationalities = await Author.distinct('nationality');
