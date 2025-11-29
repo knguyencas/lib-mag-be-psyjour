@@ -1,40 +1,47 @@
-// services/authService.js
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const ApiError = require('../utils/apiError');
 
 class AuthService {
-  
-  // REGISTER USER
+
   async registerUser(username, email, password) {
-    // Check if user exists
-    const existingUser = await User.findOne({ 
-      $or: [
-        { email: email.toLowerCase().trim() }, 
-        { username: username.toLowerCase().trim() }
-      ] 
-    });
-    
+    const trimmedUsername = username.trim();
+    const hasEmail = !!email && email.trim() !== '';
+
+    const orConditions = [{ username: trimmedUsername }];
+    if (hasEmail) {
+      orConditions.push({ email: email.toLowerCase().trim() });
+    }
+
+    const existingUser = await User.findOne({ $or: orConditions });
+
     if (existingUser) {
+      if (existingUser.username === trimmedUsername) {
+        throw ApiError.conflict('Username already exists');
+      }
+      if (hasEmail && existingUser.email === email.toLowerCase().trim()) {
+        throw ApiError.conflict('Email already exists');
+      }
       throw ApiError.conflict('Email or username already exists');
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
-    const newUser = new User({
-      username: username.trim(),
-      email: email.toLowerCase().trim(),
+    const userData = {
+      username: trimmedUsername,
       password: hashedPassword,
       createdAt: new Date()
-    });
+    };
 
+    if (hasEmail) {
+      userData.email = email.toLowerCase().trim();
+    }
+
+    const newUser = new User(userData);
     await newUser.save();
 
-    // Generate token
     const token = this._generateToken(newUser._id);
 
     return {
@@ -42,7 +49,7 @@ class AuthService {
       user: {
         id: newUser._id,
         username: newUser.username,
-        email: newUser.email,
+        email: newUser.email || null,
         displayName: newUser.displayName,
         avatar: newUser.avatar,
         createdAt: newUser.createdAt
@@ -50,28 +57,30 @@ class AuthService {
     };
   }
 
-  // LOGIN USER
-  async loginUser(email, password) {
-    // Find user
-    const user = await User.findOne({ 
-      email: email.toLowerCase().trim() 
-    });
-    
+  async loginUser(identifier, password) {
+    const trimmed = identifier.trim();
+
+    const isEmail = trimmed.includes('@');
+
+    const query = isEmail
+      ? { email: trimmed.toLowerCase() }
+      : { username: trimmed };
+
+    const user = await User.findOne(query);
+
     if (!user) {
-      throw ApiError.unauthorized('Invalid email or password');
+      throw ApiError.unauthorized('Invalid email/username or password');
     }
 
-    // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    
+
     if (!isPasswordValid) {
-      throw ApiError.unauthorized('Invalid email or password');
+      throw ApiError.unauthorized('Invalid email/username or password');
     }
 
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token
     const token = this._generateToken(user._id);
 
     return {
@@ -79,7 +88,7 @@ class AuthService {
       user: {
         id: user._id,
         username: user.username,
-        email: user.email,
+        email: user.email || null,
         displayName: user.displayName,
         avatar: user.avatar,
         lastLogin: user.lastLogin
@@ -87,12 +96,11 @@ class AuthService {
     };
   }
 
-  // GET USER PROFILE
   async getUserProfile(userId) {
     const user = await User.findById(userId)
       .select('-password')
       .lean();
-    
+
     if (!user) {
       throw ApiError.notFound('User not found');
     }
@@ -105,7 +113,6 @@ class AuthService {
     };
   }
 
-  // UPDATE USER PROFILE
   async updateUserProfile(userId, updateData) {
     if (updateData.email) {
       throw ApiError.badRequest('Cannot update email');
@@ -116,17 +123,16 @@ class AuthService {
     }
 
     if (updateData.username) {
-      const existingUser = await User.findOne({ 
+      const existingUser = await User.findOne({
         username: updateData.username.trim(),
         _id: { $ne: userId }
       });
-      
+
       if (existingUser) {
         throw ApiError.conflict('Username already taken');
       }
     }
 
-    // Update user
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $set: updateData },
@@ -140,16 +146,15 @@ class AuthService {
     return updatedUser;
   }
 
-  // CHANGE PASSWORD
   async changePassword(userId, oldPassword, newPassword) {
     const user = await User.findById(userId);
-    
+
     if (!user) {
       throw ApiError.notFound('User not found');
     }
 
     const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
-    
+
     if (!isOldPasswordValid) {
       throw ApiError.unauthorized('Old password is incorrect');
     }
@@ -161,7 +166,7 @@ class AuthService {
 
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
-    
+
     await user.save();
 
     return { message: 'Password changed successfully' };

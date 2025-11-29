@@ -7,9 +7,9 @@ class AuthController {
     try {
       const { username, email, password } = req.body;
 
-      if (!username || !email || !password) {
+      if (!username || !password) {
         const ApiError = require('../utils/apiError');
-        throw ApiError.badRequest('All fields are required');
+        throw ApiError.badRequest('Username and password are required');
       }
 
       if (username.trim().length < 3) {
@@ -17,11 +17,12 @@ class AuthController {
         throw ApiError.badRequest('Username must be at least 3 characters');
       }
 
-      if (password.length < 6) {
+      if (password.length < 8) {
         const ApiError = require('../utils/apiError');
-        throw ApiError.badRequest('Password must be at least 6 characters');
+        throw ApiError.badRequest('Password must be at least 8 characters');
       }
 
+      // email là optional – nếu có thì backend sẽ xử lý thêm
       const result = await authService.registerUser(username, email, password);
 
       res.status(201).json(
@@ -35,14 +36,14 @@ class AuthController {
   // POST /api/auth/login
   async login(req, res, next) {
     try {
-      const { email, password } = req.body;
+      const { identifier, password } = req.body;
 
-      if (!email || !password) {
+      if (!identifier || !password) {
         const ApiError = require('../utils/apiError');
-        throw ApiError.badRequest('Email and password are required');
+        throw ApiError.badRequest('Identifier and password are required');
       }
 
-      const result = await authService.loginUser(email, password);
+      const result = await authService.loginUser(identifier, password);
 
       res.json(
         ApiResponse.success(result, 'Login successful')
@@ -94,9 +95,9 @@ class AuthController {
         throw ApiError.badRequest('Old password and new password are required');
       }
 
-      if (newPassword.length < 6) {
+      if (newPassword.length < 8) {
         const ApiError = require('../utils/apiError');
-        throw ApiError.badRequest('New password must be at least 6 characters');
+        throw ApiError.badRequest('New password must be at least 8 characters');
       }
 
       const result = await authService.changePassword(userId, oldPassword, newPassword);

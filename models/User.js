@@ -10,15 +10,16 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: true,
+    required: false,        // không bắt buộc
     unique: true,
+    sparse: true,           // chỉ enforce unique nếu có field email
     lowercase: true,
     trim: true
   },
   password: {
     type: String,
     required: true,
-    minlength: 6
+    minlength: 8            // >= 8 ký tự
   },
   displayName: {
     type: String,
