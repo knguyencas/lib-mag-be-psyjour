@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const authorSchema = new mongoose.Schema({
+  author_id: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true
+  },
   name: {
     type: String,
     required: [true, 'Author name is required'],
@@ -26,6 +32,10 @@ const authorSchema = new mongoose.Schema({
   website: {
     type: String,
     trim: true
+  },
+  needs_update: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
@@ -33,8 +43,8 @@ const authorSchema = new mongoose.Schema({
 
 authorSchema.virtual('books', {
   ref: 'Book',
-  localField: '_id',
-  foreignField: 'author'
+  localField: 'author_id',
+  foreignField: 'author_id'
 });
 
 authorSchema.set('toJSON', { virtuals: true });

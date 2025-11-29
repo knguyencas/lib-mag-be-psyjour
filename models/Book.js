@@ -258,20 +258,14 @@ bookSchema.index({ rating: -1 });
 bookSchema.index({ view_count: -1 });
 bookSchema.index({ createdAt: -1 });
 
-// ==========================================
-// PRE-SAVE HOOK - AUTO CALCULATE primary_genre
-// ==========================================
 bookSchema.pre('save', async function(next) {
   try {
-    // Only auto-calculate primary_genre if categories exist
     if (this.categories && this.categories.length > 0) {
-      // Get category documents
       const categoryDocs = await Category.find({ 
         name: { $in: this.categories },
         isActive: true
       });
 
-      // Count primary_genre occurrences
       const genreCount = {};
       categoryDocs.forEach(cat => {
         if (cat.primary_genre) {
@@ -279,12 +273,10 @@ bookSchema.pre('save', async function(next) {
         }
       });
 
-      // Find dominant genre (most common)
       if (Object.keys(genreCount).length > 0) {
         const dominantGenre = Object.entries(genreCount)
           .sort((a, b) => b[1] - a[1])[0][0];
 
-        // Auto-set or override primary_genre
         if (!this.primary_genre || this.primary_genre !== dominantGenre) {
           this.primary_genre = dominantGenre;
           console.log(`✅ Set primary_genre to "${this.primary_genre}" for book: ${this.book_id}`);
@@ -294,15 +286,11 @@ bookSchema.pre('save', async function(next) {
     
     next();
   } catch (error) {
-    console.error('❌ Error in pre-save hook:', error);
-    // Don't block save on error - just log it
+    console.error('Error in pre-save hook:', error);
     next();
   }
 });
 
-// ==========================================
-// STATIC METHODS
-// ==========================================
 bookSchema.statics.getPrimaryGenres = async function() {
   return await Category.getAllPrimaryGenres();
 };
@@ -323,9 +311,6 @@ bookSchema.statics.getAllTags = async function() {
   return await Tag.getAllTagsGrouped();
 };
 
-// ==========================================
-// INSTANCE METHODS
-// ==========================================
 bookSchema.methods.isValidCategory = async function(category) {
   if (!this.primary_genre) return false;
   const validCategories = await Category.getCategoryNamesForPrimaryGenre(this.primary_genre);
@@ -336,10 +321,8 @@ bookSchema.methods.isValidTag = async function(tag) {
   return await Tag.isValidTag(tag);
 };
 
-// FIXED: Don't trigger save, just update directly
 bookSchema.methods.incrementViewCount = async function() {
   this.view_count += 1;
-  // Use updateOne to avoid triggering pre-save hook
   await this.constructor.updateOne(
     { _id: this._id },
     { $inc: { view_count: 1 } }
@@ -348,7 +331,6 @@ bookSchema.methods.incrementViewCount = async function() {
 
 bookSchema.methods.incrementDownloadCount = async function() {
   this.download_count += 1;
-  // Use updateOne to avoid triggering pre-save hook
   await this.constructor.updateOne(
     { _id: this._id },
     { $inc: { download_count: 1 } }
