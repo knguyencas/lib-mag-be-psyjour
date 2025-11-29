@@ -12,6 +12,8 @@ const epubSplitRoute = require('./routes/epubSplit.route');
 const authRoutes = require('./routes/auth.route');
 const adminMetaRoutes = require('./routes/adminMeta.route');
 const adminBookRoutes = require('./routes/adminBooks.route');
+const adminUserRoutes = require('./routes/adminUser.route');
+const errorHandler = require('./middleware/errorHandler');
 
 var app = express();
 
@@ -35,7 +37,10 @@ app.use('/api/auth', authRoutes);
 
 app.use('/api/admin', adminMetaRoutes);
 app.use('/api/admin', adminBookRoutes);
+app.use('/api/admin', adminUserRoutes);
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+app.use(errorHandler);
 
 module.exports = app;
