@@ -32,7 +32,8 @@ class AuthService {
     const userData = {
       username: trimmedUsername,
       password: hashedPassword,
-      createdAt: new Date()
+      createdAt: new Date(),
+      role: 'user'
     };
 
     if (hasEmail) {
@@ -42,7 +43,7 @@ class AuthService {
     const newUser = new User(userData);
     await newUser.save();
 
-    const token = this._generateToken(newUser._id);
+    const token = this._generateToken(newUser);
 
     return {
       token,
@@ -52,7 +53,8 @@ class AuthService {
         email: newUser.email || null,
         displayName: newUser.displayName,
         avatar: newUser.avatar,
-        createdAt: newUser.createdAt
+        createdAt: newUser.createdAt,
+        role: newUser.role
       }
     };
   }
@@ -175,18 +177,25 @@ class AuthService {
   async verifyToken(token) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      return decoded.userId;
+      return {
+        userId: decoded.userId,
+        role: decoded.role
+      };
     } catch (error) {
       throw ApiError.unauthorized('Invalid or expired token');
     }
   }
 
-  _generateToken(userId) {
-    return jwt.sign(
-      { userId: userId.toString() },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+
+  _generateToken(user) {
+  return jwt.sign(
+    {
+      userId: user._id.toString(),
+      role: user.role
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
   }
 
   async _getUserStats(userId) {

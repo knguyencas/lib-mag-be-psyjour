@@ -22,7 +22,6 @@ class AuthController {
         throw ApiError.badRequest('Password must be at least 8 characters');
       }
 
-      // email là optional – nếu có thì backend sẽ xử lý thêm
       const result = await authService.registerUser(username, email, password);
 
       res.status(201).json(

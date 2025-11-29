@@ -5,34 +5,45 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true,
-    minlength: 3
-  },
-  email: {
-    type: String,
-    required: false,        // không bắt buộc
-    unique: true,
-    sparse: true,           // chỉ enforce unique nếu có field email
-    lowercase: true,
     trim: true
   },
+
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true
+  },
+
   password: {
     type: String,
-    required: true,
-    minlength: 8            // >= 8 ký tự
+    required: true
   },
+
   displayName: {
     type: String,
-    default: ''
+    trim: true
   },
+
   avatar: {
     type: String,
-    default: ''
+    trim: true
   },
+
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'super_admin'],
+    default: 'user',
+    index: true
+  },
+
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+
+  lastLogin: Date
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('User', userSchema);
