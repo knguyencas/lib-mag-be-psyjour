@@ -18,7 +18,7 @@ const errorHandler = require('./middleware/errorHandler');
 var app = express();
 
 var swaggerUi = require('swagger-ui-express');
-var swaggerSpec = require('./swagger.config.js');
+var swaggerSpec = require('./config/swagger');
 
 app.use(cors());
 
@@ -30,11 +30,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+
 app.use('/api/books', booksRouter);
 app.use('/api/authors', authorsRouter);
 app.use('/api', epubSplitRoute);
 app.use('/api/auth', authRoutes);
-
 app.use('/api/admin', adminMetaRoutes);
 app.use('/api/admin', adminBookRoutes);
 app.use('/api/admin', adminUserRoutes);

@@ -5,14 +5,15 @@ class AuthController {
   // POST /api/auth/register
   async register(req, res, next) {
     try {
-      const { username, email, password } = req.body;
+      let { username, email, password } = req.body;
 
       if (!username || !password) {
         const ApiError = require('../utils/apiError');
         throw ApiError.badRequest('Username and password are required');
       }
 
-      if (username.trim().length < 3) {
+      const trimmedUsername = username.trim();
+      if (trimmedUsername.length < 3) {
         const ApiError = require('../utils/apiError');
         throw ApiError.badRequest('Username must be at least 3 characters');
       }
@@ -22,7 +23,10 @@ class AuthController {
         throw ApiError.badRequest('Password must be at least 8 characters');
       }
 
-      // Email là optional
+      if (email === '' || (email && email.trim() === '')) {
+        email = undefined;
+      }
+
       const result = await authService.registerUser(username, email, password);
 
       res.status(201).json(

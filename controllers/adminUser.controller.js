@@ -5,8 +5,14 @@ class AdminUserController {
   // POST /api/admin/users/create-admin
   async createAdmin(req, res, next) {
     try {
-      const creatorId = req.userId; // super_admin
-      const result = await adminUserService.createAdminUser(creatorId, req.body);
+      const creatorId = req.userId;
+      let payload = { ...req.body };
+
+      if (payload.email === '' || (payload.email && payload.email.trim() === '')) {
+        payload.email = undefined;
+      }
+
+      const result = await adminUserService.createAdminUser(creatorId, payload);
 
       res.status(201).json(
         ApiResponse.success(result, 'Admin user created successfully', 201)

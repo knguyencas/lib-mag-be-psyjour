@@ -24,27 +24,26 @@ class AdminUserService {
     }
 
     const trimmedUsername = username.trim();
-    let normalizedEmail = null;
+    
+    let normalizedEmail = undefined;
 
-    if (email && email.trim()) {
+    if (email && typeof email === 'string' && email.trim() !== '') {
       normalizedEmail = email.toLowerCase().trim();
       
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(normalizedEmail)) {
         throw ApiError.badRequest('Invalid email format');
       }
+      
+      const existingEmail = await User.findOne({ email: normalizedEmail });
+      if (existingEmail) {
+        throw ApiError.conflict('Email already exists');
+      }
     }
 
     const existingUsername = await User.findOne({ username: trimmedUsername });
     if (existingUsername) {
       throw ApiError.conflict('Username already exists');
-    }
-
-    if (normalizedEmail) {
-      const existingEmail = await User.findOne({ email: normalizedEmail });
-      if (existingEmail) {
-        throw ApiError.conflict('Email already exists');
-      }
     }
 
     const salt = await bcrypt.genSalt(10);

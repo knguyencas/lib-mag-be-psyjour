@@ -12,75 +12,41 @@ const { authMiddleware } = require('../middleware/auth');
 
 /**
  * @swagger
- * components:
- *   schemas:
- *     User:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *         username:
- *           type: string
- *         email:
- *           type: string
- *         displayName:
- *           type: string
- *         avatar:
- *           type: string
- *         role:
- *           type: string
- *           enum: [user, admin, super_admin]
- *         createdAt:
- *           type: string
- *           format: date-time
- *     RegisterInput:
- *       type: object
- *       required:
- *         - username
- *         - password
- *       properties:
- *         username:
- *           type: string
- *           minLength: 3
- *         email:
- *           type: string
- *           format: email
- *           description: Optional email
- *         password:
- *           type: string
- *           minLength: 8
- *     LoginInput:
- *       type: object
- *       required:
- *         - identifier
- *         - password
- *       properties:
- *         identifier:
- *           type: string
- *           description: "Email or username"
- *         password:
- *           type: string
- */
-
-/**
- * @swagger
  * /api/auth/register:
  *   post:
- *     summary: Register a new user (role = user)
+ *     summary: Register a new user
+ *     description: Register with username and password. Email is optional.
  *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/RegisterInput'
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 minLength: 3
+ *                 example: user1
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *                 description: Optional
+ *               password:
+ *                 type: string
+ *                 minLength: 8
+ *                 example: password123
  *     responses:
  *       201:
  *         description: User registered successfully
  *       400:
  *         description: Bad request
  *       409:
- *         description: Email or username already exists
+ *         description: Username or email already exists
  */
 router.post('/register', authController.register);
 
@@ -88,19 +54,30 @@ router.post('/register', authController.register);
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Login with email or username
+ *     summary: Login with username or email
  *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/LoginInput'
+ *             type: object
+ *             required:
+ *               - identifier
+ *               - password
+ *             properties:
+ *               identifier:
+ *                 type: string
+ *                 description: Username or email
+ *                 example: user1
+ *               password:
+ *                 type: string
+ *                 example: password123
  *     responses:
  *       200:
- *         description: Login successful, returns JWT token and user
+ *         description: Login successful
  *       401:
- *         description: Invalid email/username or password
+ *         description: Invalid credentials
  */
 router.post('/login', authController.login);
 
@@ -134,11 +111,14 @@ router.get('/profile', authMiddleware, authController.getProfile);
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               displayName:
+ *                 type: string
+ *               avatar:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Profile updated successfully
- *       400:
- *         description: Bad request
  *       401:
  *         description: Unauthorized
  */
@@ -158,7 +138,9 @@ router.put('/profile', authMiddleware, authController.updateProfile);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [oldPassword, newPassword]
+ *             required:
+ *               - oldPassword
+ *               - newPassword
  *             properties:
  *               oldPassword:
  *                 type: string
@@ -168,8 +150,6 @@ router.put('/profile', authMiddleware, authController.updateProfile);
  *     responses:
  *       200:
  *         description: Password changed successfully
- *       400:
- *         description: Bad request
  *       401:
  *         description: Unauthorized
  */

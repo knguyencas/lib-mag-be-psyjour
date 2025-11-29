@@ -11,26 +11,25 @@ class AuthService {
       throw ApiError.badRequest('Username must be at least 3 characters');
     }
 
-    let normalizedEmail = null;
-    if (email && email.trim()) {
+    let normalizedEmail = undefined;
+    
+    if (email && typeof email === 'string' && email.trim() !== '') {
       normalizedEmail = email.toLowerCase().trim();
       
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(normalizedEmail)) {
         throw ApiError.badRequest('Invalid email format');
       }
+      
+      const existingEmail = await User.findOne({ email: normalizedEmail });
+      if (existingEmail) {
+        throw ApiError.conflict('Email already exists');
+      }
     }
 
     const existingUsername = await User.findOne({ username: trimmedUsername });
     if (existingUsername) {
       throw ApiError.conflict('Username already exists');
-    }
-
-    if (normalizedEmail) {
-      const existingEmail = await User.findOne({ email: normalizedEmail });
-      if (existingEmail) {
-        throw ApiError.conflict('Email already exists');
-      }
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -47,8 +46,15 @@ class AuthService {
       userData.email = normalizedEmail;
     }
 
+    console.log('userData before save:', userData);
+
     const newUser = new User(userData);
+    
+    console.log('newUser before save:', newUser.toObject());
+    
     await newUser.save();
+    
+    console.log('newUser after save:', newUser.toObject());
 
     const token = this._generateToken(newUser);
 
@@ -68,7 +74,6 @@ class AuthService {
 
   async loginUser(identifier, password) {
     const trimmed = identifier.trim();
-
     const isEmail = trimmed.includes('@');
 
     const query = isEmail

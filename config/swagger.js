@@ -1,4 +1,3 @@
-// swagger.config.js
 const swaggerJsdoc = require('swagger-jsdoc');
 
 const options = {
@@ -12,29 +11,32 @@ const options = {
     servers: [
       {
         url: 'http://localhost:3000',
-        description: 'Local dev server',
+        description: 'Local development server',
+      },
+      {
+        url: 'https://api.yourdomain.com',
+        description: 'Production server (update this later)',
       },
     ],
     components: {
       securitySchemes: {
-        // 👇 cái này làm cho Swagger có nút "Authorize"
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
+          description: 'Enter your JWT token in format: Bearer <token>'
         },
       },
     },
-    // Nếu muốn mọi endpoint mặc định yêu cầu bearerAuth, có thể bật global security:
     // security: [
     //   {
     //     bearerAuth: [],
     //   },
     // ],
   },
-  // Nơi swagger-jsdoc sẽ quét JSDoc @swagger của cậu
   apis: [
     './routes/*.js',
+    './models/*.js',
   ],
 };
 

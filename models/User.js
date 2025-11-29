@@ -9,14 +9,6 @@ const userSchema = new mongoose.Schema({
     minlength: 3
   },
 
-  email: {
-    type: String,
-    trim: true,
-    lowercase: true,
-    sparse: true,
-    unique: true
-  },
-
   password: {
     type: String,
     required: true
@@ -46,10 +38,26 @@ const userSchema = new mongoose.Schema({
 
   lastLogin: Date
 }, {
-  timestamps: true
+  timestamps: true,
+  strict: false
 });
 
 userSchema.index({ username: 1 });
-userSchema.index({ email: 1 });
+
+userSchema.index(
+  { email: 1 }, 
+  { 
+    unique: true, 
+    sparse: true
+  }
+);
+
+userSchema.pre('save', function(next) {
+  if (!this.email || this.email === '' || this.email === null) {
+    delete this.email;
+    delete this._doc.email;
+  }
+  next();
+});
 
 module.exports = mongoose.model('User', userSchema);
