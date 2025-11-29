@@ -3,7 +3,6 @@ const Category = require('../models/Category');
 const ApiError = require('../utils/apiError');
 
 class BookService {
-  // Helper method to calculate primary_genre from categories
   async _calculatePrimaryGenre(categories) {
     if (!categories || categories.length === 0) return null;
 
@@ -22,7 +21,6 @@ class BookService {
 
       if (Object.keys(genreCount).length === 0) return null;
 
-      // Return the most common genre
       const dominantGenre = Object.entries(genreCount)
         .sort((a, b) => b[1] - a[1])[0][0];
 
@@ -33,13 +31,11 @@ class BookService {
     }
   }
 
-  // Helper to add primary_genre to book object
   async _enrichBookWithGenre(book) {
     if (!book) return book;
     
     const bookObj = book.toObject ? book.toObject() : book;
     
-    // If primary_genre is missing or empty, calculate it
     if (!bookObj.primary_genre && bookObj.categories) {
       bookObj.primary_genre = await this._calculatePrimaryGenre(bookObj.categories);
     }
@@ -47,7 +43,6 @@ class BookService {
     return bookObj;
   }
 
-  // Helper to enrich multiple books
   async _enrichBooksWithGenre(books) {
     return Promise.all(books.map(book => this._enrichBookWithGenre(book)));
   }
@@ -118,7 +113,6 @@ class BookService {
 
     const total = await Book.countDocuments(filter);
 
-    // Enrich books with primary_genre
     const enrichedBooks = await this._enrichBooksWithGenre(books);
 
     return {
@@ -139,13 +133,11 @@ class BookService {
       throw ApiError.notFound('Book not found');
     }
 
-    // Increment view count without triggering pre-save
     await Book.updateOne(
       { book_id: bookId },
       { $inc: { view_count: 1 } }
     );
 
-    // Enrich with primary_genre
     return await this._enrichBookWithGenre(book);
   }
 
