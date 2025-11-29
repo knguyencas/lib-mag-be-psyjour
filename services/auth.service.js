@@ -7,23 +7,30 @@ class AuthService {
 
   async registerUser(username, email, password) {
     const trimmedUsername = username.trim();
-    const hasEmail = !!email && email.trim() !== '';
-
-    const orConditions = [{ username: trimmedUsername }];
-    if (hasEmail) {
-      orConditions.push({ email: email.toLowerCase().trim() });
+    if (trimmedUsername.length < 3) {
+      throw ApiError.badRequest('Username must be at least 3 characters');
     }
 
-    const existingUser = await User.findOne({ $or: orConditions });
-
-    if (existingUser) {
-      if (existingUser.username === trimmedUsername) {
-        throw ApiError.conflict('Username already exists');
+    let normalizedEmail = null;
+    if (email && email.trim()) {
+      normalizedEmail = email.toLowerCase().trim();
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(normalizedEmail)) {
+        throw ApiError.badRequest('Invalid email format');
       }
-      if (hasEmail && existingUser.email === email.toLowerCase().trim()) {
+    }
+
+    const existingUsername = await User.findOne({ username: trimmedUsername });
+    if (existingUsername) {
+      throw ApiError.conflict('Username already exists');
+    }
+
+    if (normalizedEmail) {
+      const existingEmail = await User.findOne({ email: normalizedEmail });
+      if (existingEmail) {
         throw ApiError.conflict('Email already exists');
       }
-      throw ApiError.conflict('Email or username already exists');
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -36,8 +43,8 @@ class AuthService {
       role: 'user'
     };
 
-    if (hasEmail) {
-      userData.email = email.toLowerCase().trim();
+    if (normalizedEmail) {
+      userData.email = normalizedEmail;
     }
 
     const newUser = new User(userData);
@@ -53,8 +60,8 @@ class AuthService {
         email: newUser.email || null,
         displayName: newUser.displayName,
         avatar: newUser.avatar,
-        createdAt: newUser.createdAt,
-        role: newUser.role
+        role: newUser.role,
+        createdAt: newUser.createdAt
       }
     };
   }
@@ -71,19 +78,19 @@ class AuthService {
     const user = await User.findOne(query);
 
     if (!user) {
-      throw ApiError.unauthorized('Invalid email/username or password');
+      throw ApiError.unauthorized('Invalid username/email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw ApiError.unauthorized('Invalid email/username or password');
+      throw ApiError.unauthorized('Invalid username/email or password');
     }
 
     user.lastLogin = new Date();
     await user.save();
 
-    const token = this._generateToken(user._id);
+    const token = this._generateToken(user);
 
     return {
       token,
@@ -93,6 +100,7 @@ class AuthService {
         email: user.email || null,
         displayName: user.displayName,
         avatar: user.avatar,
+        role: user.role,
         lastLogin: user.lastLogin
       }
     };
@@ -107,12 +115,7 @@ class AuthService {
       throw ApiError.notFound('User not found');
     }
 
-    const stats = await this._getUserStats(userId);
-
-    return {
-      ...user,
-      stats
-    };
+    return user;
   }
 
   async updateUserProfile(userId, updateData) {
@@ -122,6 +125,10 @@ class AuthService {
 
     if (updateData.password) {
       throw ApiError.badRequest('Use change-password endpoint to update password');
+    }
+
+    if (updateData.role) {
+      throw ApiError.forbidden('Cannot update role');
     }
 
     if (updateData.username) {
@@ -186,36 +193,15 @@ class AuthService {
     }
   }
 
-
   _generateToken(user) {
-  return jwt.sign(
-    {
-      userId: user._id.toString(),
-      role: user.role
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-  }
-
-  async _getUserStats(userId) {
-    const Favorite = require('../models/Favorite');
-    const Comment = require('../models/Comment');
-
-    try {
-      const favoriteCount = await Favorite.countDocuments({ userId });
-      const commentCount = await Comment.countDocuments({ userId });
-
-      return {
-        favorites: favoriteCount,
-        comments: commentCount
-      };
-    } catch (error) {
-      return {
-        favorites: 0,
-        comments: 0
-      };
-    }
+    return jwt.sign(
+      {
+        userId: user._id.toString(),
+        role: user.role
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
   }
 }
 

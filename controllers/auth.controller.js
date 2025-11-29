@@ -22,6 +22,7 @@ class AuthController {
         throw ApiError.badRequest('Password must be at least 8 characters');
       }
 
+      // Email là optional
       const result = await authService.registerUser(username, email, password);
 
       res.status(201).json(
@@ -39,7 +40,7 @@ class AuthController {
 
       if (!identifier || !password) {
         const ApiError = require('../utils/apiError');
-        throw ApiError.badRequest('Identifier and password are required');
+        throw ApiError.badRequest('Username/email and password are required');
       }
 
       const result = await authService.loginUser(identifier, password);
