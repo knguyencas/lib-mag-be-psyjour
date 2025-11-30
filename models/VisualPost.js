@@ -23,6 +23,19 @@ const visualPostSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  image_url: {
+    type: String,
+    required: true
+  },
+  image_public_id: {
+    type: String,
+    required: true
+  },
+  tags: [{
+    type: String,
+    lowercase: true,
+    trim: true
+  }],
   likes: {
     type: Number,
     default: 0
