@@ -13,6 +13,8 @@ const authRoutes = require('./routes/auth.route');
 const adminMetaRoutes = require('./routes/adminMeta.route');
 const adminBookRoutes = require('./routes/adminBooks.route');
 const adminUserRoutes = require('./routes/adminUser.route');
+const adminManageBooksRoutes = require('./routes/adminManageBooks.route');
+const adminManagePostsRoutes = require('./routes/adminManagePosts.route');
 const errorHandler = require('./middleware/errorHandler');
 
 var app = express();
@@ -38,6 +40,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminMetaRoutes);
 app.use('/api/admin', adminBookRoutes);
 app.use('/api/admin', adminUserRoutes);
+app.use('/api/admin/books', adminManageBooksRoutes);
+app.use('/api/admin/posts', adminManagePostsRoutes);
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
