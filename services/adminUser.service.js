@@ -27,17 +27,26 @@ class AdminUserService {
     
     let normalizedEmail = undefined;
 
-    if (email && typeof email === 'string' && email.trim() !== '') {
-      normalizedEmail = email.toLowerCase().trim();
+    if (email && typeof email === 'string') {
+      const trimmedEmail = email.trim();
       
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(normalizedEmail)) {
-        throw ApiError.badRequest('Invalid email format');
-      }
-      
-      const existingEmail = await User.findOne({ email: normalizedEmail });
-      if (existingEmail) {
-        throw ApiError.conflict('Email already exists');
+      if (trimmedEmail === '') {
+        normalizedEmail = undefined;
+      } else {
+        normalizedEmail = trimmedEmail.toLowerCase();
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(normalizedEmail)) {
+          throw ApiError.badRequest('Invalid email format');
+        }
+        
+        const existingEmail = await User.findOne({ 
+          email: normalizedEmail,
+          email: { $exists: true, $ne: null, $ne: '' }
+        });
+        if (existingEmail) {
+          throw ApiError.conflict('Email already exists');
+        }
       }
     }
 
@@ -56,7 +65,7 @@ class AdminUserService {
       createdAt: new Date()
     };
 
-    if (normalizedEmail) {
+    if (normalizedEmail !== undefined) {
       userData.email = normalizedEmail;
     }
 

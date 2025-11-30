@@ -48,14 +48,26 @@ userSchema.index(
   { email: 1 }, 
   { 
     unique: true, 
-    sparse: true
+    sparse: true,
+    partialFilterExpression: { 
+      email: { $exists: true, $ne: null, $ne: '' } 
+    }
   }
 );
 
+userSchema.pre('validate', function(next) {
+  if (typeof this.email === 'string') {
+    const trimmed = this.email.trim();
+    if (trimmed === '') {
+      this.email = undefined;
+    }
+  }
+  next();
+});
+
 userSchema.pre('save', function(next) {
-  if (!this.email || this.email === '' || this.email === null) {
-    delete this.email;
-    delete this._doc.email;
+  if (!this.email || this.email === '' || (typeof this.email === 'string' && this.email.trim() === '')) {
+    this.email = undefined;
   }
   next();
 });

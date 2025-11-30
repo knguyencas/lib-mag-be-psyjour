@@ -13,17 +13,26 @@ class AuthService {
 
     let normalizedEmail = undefined;
     
-    if (email && typeof email === 'string' && email.trim() !== '') {
-      normalizedEmail = email.toLowerCase().trim();
+    if (email && typeof email === 'string') {
+      const trimmedEmail = email.trim();
       
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(normalizedEmail)) {
-        throw ApiError.badRequest('Invalid email format');
-      }
-      
-      const existingEmail = await User.findOne({ email: normalizedEmail });
-      if (existingEmail) {
-        throw ApiError.conflict('Email already exists');
+      if (trimmedEmail === '') {
+        normalizedEmail = undefined;
+      } else {
+        normalizedEmail = trimmedEmail.toLowerCase();
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(normalizedEmail)) {
+          throw ApiError.badRequest('Invalid email format');
+        }
+        
+        const existingEmail = await User.findOne({ 
+          email: normalizedEmail,
+          email: { $exists: true, $ne: null, $ne: '' }
+        });
+        if (existingEmail) {
+          throw ApiError.conflict('Email already exists');
+        }
       }
     }
 
@@ -42,7 +51,7 @@ class AuthService {
       role: 'user'
     };
 
-    if (normalizedEmail) {
+    if (normalizedEmail !== undefined) {
       userData.email = normalizedEmail;
     }
 
@@ -76,9 +85,15 @@ class AuthService {
     const trimmed = identifier.trim();
     const isEmail = trimmed.includes('@');
 
-    const query = isEmail
-      ? { email: trimmed.toLowerCase() }
-      : { username: trimmed };
+    let query;
+    if (isEmail) {
+      query = { 
+        email: trimmed.toLowerCase(),
+        email: { $exists: true, $ne: null, $ne: '' }
+      };
+    } else {
+      query = { username: trimmed };
+    }
 
     const user = await User.findOne(query);
 
