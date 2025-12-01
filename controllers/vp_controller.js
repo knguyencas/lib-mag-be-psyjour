@@ -161,3 +161,88 @@ exports.getUserPosts = async (req, res) => {
     });
   }
 };
+/**
+ * @desc    Get all published visual posts (public)
+ * @route   GET /api/visualpost
+ * @access  Public
+ */
+exports.getPublishedPosts = async (req, res) => {
+  try {
+    const { page = 1, limit = 12, sort = 'newest' } = req.query;
+
+    const query = { status: 'published' };
+
+    let sortOption = {};
+    switch (sort) {
+      case 'oldest':
+        sortOption = { createdAt: 1 };
+        break;
+      case 'likes':
+        sortOption = { likes: -1, createdAt: -1 };
+        break;
+      case 'newest':
+      default:
+        sortOption = { createdAt: -1 };
+        break;
+    }
+
+    const posts = await VisualPost.find(query)
+      .sort(sortOption)
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .populate('author_id', 'username displayName avatar');
+
+    const count = await VisualPost.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      data: posts,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        pages: Math.ceil(count / limit),
+        limit: parseInt(limit),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching published visual posts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch posts',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * @desc    Get a single visual post by ID
+ * @route   GET /api/visualpost/:id
+ * @access  Public
+ */
+exports.getPostById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const post = await VisualPost.findOne({ post_id: id })
+      .populate('author_id', 'username displayName avatar');
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: 'Post not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: post,
+    });
+  } catch (error) {
+    console.error('Error fetching post by ID:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch post',
+      error: error.message,
+    });
+  }
+};
