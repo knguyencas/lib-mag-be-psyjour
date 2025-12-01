@@ -8,7 +8,9 @@ const perspectivePostSchema = new mongoose.Schema({
   },
   topic: {
     type: String,
-    required: true
+    required: true,
+    trim: true,
+    maxlength: 200
   },
   content: {
     type: String,
@@ -19,21 +21,43 @@ const perspectivePostSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  author_username: {
+  tags: [{
     type: String,
-    required: true
+    trim: true
+  }],
+  primary_genre: {
+    type: String,
+    trim: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'published', 'rejected', 'archived'],
+    default: 'pending'
   },
   upvotes: {
     type: Number,
     default: 0
   },
-  status: {
-    type: String,
-    enum: ['pending', 'published', 'archived', 'rejected'],
-    default: 'pending'
+  downvotes: {
+    type: Number,
+    default: 0
+  },
+  views: {
+    type: Number,
+    default: 0
+  },
+  commentsCount: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
 });
 
-module.exports = mongoose.model('PerspectivePost', perspectivePostSchema);
+perspectivePostSchema.index({ status: 1, createdAt: -1 });
+perspectivePostSchema.index({ author_id: 1 });
+perspectivePostSchema.index({ post_id: 1 });
+
+const PerspectivePost = mongoose.model('PerspectivePost', perspectivePostSchema);
+
+module.exports = PerspectivePost;
