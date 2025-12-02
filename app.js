@@ -17,6 +17,9 @@ const adminManageBooksRoutes = require('./routes/adminManageBooks.route');
 const adminManagePostsRoutes = require('./routes/adminManagePosts.route');
 const visualPostRoute = require('./routes/visualPost.route');
 const perspectivePostRoute = require('./routes/perspectivePost.route');
+
+const userBooksRoutes = require('./routes/userBooks.route');
+
 const errorHandler = require('./middleware/errorHandler');
 
 var app = express();
@@ -46,6 +49,8 @@ app.use('/api/admin/books', adminManageBooksRoutes);
 app.use('/api/admin/posts', adminManagePostsRoutes);
 app.use('/api/visualpost', visualPostRoute);
 app.use('/api/perspectivepost', perspectivePostRoute);
+
+app.use('/api/books', userBooksRoutes);
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
