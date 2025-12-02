@@ -34,8 +34,7 @@ class AdminMetaService {
     const regex = new RegExp(q, 'i');
 
     const categories = await Category.find({
-      name: { $regex: regex },
-      isActive: true
+      name: { $regex: regex }
     })
       .sort({ name: 1 })
       .limit(10)
@@ -56,8 +55,7 @@ class AdminMetaService {
     const regex = new RegExp(q, 'i');
 
     const tags = await Tag.find({
-      name: { $regex: regex },
-      isActive: true
+      name: { $regex: regex }
     })
       .sort({ name: 1 })
       .limit(10)
