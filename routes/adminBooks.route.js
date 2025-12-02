@@ -1,4 +1,3 @@
-// routes/adminBooks.route.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -9,7 +8,7 @@ const storage = multer.memoryStorage();
 const upload = multer({
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB
+    fileSize: 50 * 1024 * 1024
   }
 });
 
@@ -91,10 +90,7 @@ router.post(
   '/books',
   authMiddleware,
   authorizeRoles('admin', 'super_admin'),
-  upload.fields([
-    { name: 'cover', maxCount: 1 },
-    { name: 'ebook', maxCount: 1 }
-  ]),
+  upload.any(),
   (req, res, next) => adminBooksController.createBook(req, res, next)
 );
 

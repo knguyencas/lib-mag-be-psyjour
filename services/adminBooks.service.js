@@ -2,237 +2,219 @@ const Book = require('../models/Book');
 const Author = require('../models/Author');
 const Category = require('../models/Category');
 const Tag = require('../models/Tag');
-const ApiError = require('../utils/apiError');
 const cloudinary = require('../config/cloudinary');
-const streamifier = require('streamifier');
+const ApiError = require('../utils/apiError');
 
 class AdminBooksService {
-  async _generateNextBookId() {
-    const lastBook = await Book.findOne({})
-      .sort({ book_id: -1 })
-      .lean();
-
-    if (!lastBook || !lastBook.book_id) {
-      return 'BK001';
-    }
-
-    const num = parseInt(lastBook.book_id.replace('BK', ''), 10) || 0;
-    const next = num + 1;
-    return 'BK' + String(next).padStart(3, '0');
-  }
-
-  async _generateNextAuthorId() {
-    const lastAuthor = await Author.findOne({})
-      .sort({ author_id: -1 })
-      .lean();
-
-    if (!lastAuthor || !lastAuthor.author_id) {
-      return 'AU001';
-    }
-
-    const num = parseInt(lastAuthor.author_id.replace('AU', ''), 10) || 0;
-    const next = num + 1;
-    return 'AU' + String(next).padStart(3, '0');
-  }
-
-  _uploadStreamToCloudinary(file, folder, resource_type = 'image') {
-    return new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          resource_type
-        },
-        (error, result) => {
-          if (error) return reject(error);
-          resolve(result);
-        }
-      );
-
-      streamifier.createReadStream(file.buffer).pipe(uploadStream);
-    });
-  }
-
-  async _uploadCover(file) {
-    const result = await this._uploadStreamToCloudinary(file, 'psyche_library/covers', 'image');
-    return {
-      url: result.secure_url,
-      public_id: result.public_id,
-      width: result.width,
-      height: result.height,
-      format: result.format
-    };
-  }
-
-  async _uploadEpub(file) {
-    const result = await this._uploadStreamToCloudinary(file, 'psyche_library/ebooks', 'raw');
-    return {
-      url: result.secure_url,
-      public_id: result.public_id,
-      size_bytes: result.bytes,
-      mime_type: file.mimetype || 'application/epub+zip',
-      uploaded_at: new Date()
-    };
-  }
-
-  async _resolveAuthors(author_ids_raw, new_authors_raw) {
-    let existingIds = [];
-    let newAuthorsInput = [];
-
-    try {
-      if (Array.isArray(author_ids_raw)) {
-        existingIds = author_ids_raw;
-      } else if (typeof author_ids_raw === 'string' && author_ids_raw.trim()) {
-        existingIds = JSON.parse(author_ids_raw);
-      }
-    } catch {
-      existingIds = [];
-    }
-
-    try {
-      if (Array.isArray(new_authors_raw)) {
-        newAuthorsInput = new_authors_raw;
-      } else if (typeof new_authors_raw === 'string' && new_authors_raw.trim()) {
-        newAuthorsInput = JSON.parse(new_authors_raw);
-      }
-    } catch {
-      newAuthorsInput = [];
-    }
-
-    let existingAuthorDocs = [];
-    if (existingIds.length > 0) {
-      existingAuthorDocs = await Author.find({
-        author_id: { $in: existingIds }
-      }).lean();
-    }
-
-    const idToName = new Map();
-    existingAuthorDocs.forEach(a => {
-      if (a.author_id && a.name) {
-        idToName.set(a.author_id, a.name);
-      }
-    });
-
-    const allAuthorIds = [...existingIds];
-
-    for (const na of newAuthorsInput) {
-      const name = (na.name || '').trim();
-      if (!name) continue;
-
-      const newId = await this._generateNextAuthorId();
-      const doc = new Author({
-        author_id: newId,
-        name,
-        needs_update: true
-      });
-
-      await doc.save();
-      allAuthorIds.push(newId);
-      idToName.set(newId, name);
-    }
-
-    if (allAuthorIds.length === 0) {
-      throw ApiError.badRequest('At least one author is required (existing or new).');
-    }
-
-    const mainAuthorId = allAuthorIds[0];
-    const mainAuthorName = idToName.get(mainAuthorId) || 'Unknown author';
-
-    return {
-      mainAuthorId,
-      mainAuthorName,
-      allAuthorIds
-    };
-  }
-
-  _parseStringOrArray(value) {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      if (!trimmed) return [];
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {
-        return trimmed
-          .split(',')
-          .map(s => s.trim())
-          .filter(Boolean);
-      }
-    }
-
-    return [];
+  async generateBookId() {
+    const prefix = 'BK';
+    const timestamp = Date.now().toString().slice(-8);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `${prefix}${timestamp}${random}`;
   }
 
   async createBook(adminUserId, body, files) {
-    if (!adminUserId) {
-      throw ApiError.unauthorized('Admin ID not found in request');
+    try {
+      const {
+        title,
+        author,
+        author_id,
+        publisher,
+        year,
+        language,
+        pageCount,
+        punchline,
+        blurb,
+        isbn,
+        status = 'draft',
+        categories,
+        tags
+      } = body;
+
+      if (!title?.trim()) {
+        throw ApiError.badRequest('Title is required');
+      }
+
+      if (!author?.trim()) {
+        throw ApiError.badRequest('Author name is required');
+      }
+
+      if (!author_id?.trim()) {
+        throw ApiError.badRequest('Author ID is required');
+      }
+
+      if (!publisher?.trim()) {
+        throw ApiError.badRequest('Publisher is required');
+      }
+
+      if (!punchline?.trim()) {
+        throw ApiError.badRequest('Punchline is required');
+      }
+
+      if (!blurb?.trim()) {
+        throw ApiError.badRequest('Blurb is required');
+      }
+
+      if (!year) {
+        throw ApiError.badRequest('Publication year is required');
+      }
+
+      if (!pageCount) {
+        throw ApiError.badRequest('Page count is required');
+      }
+
+      if (!files.cover || !files.cover[0]) {
+        throw ApiError.badRequest('Cover image is required');
+      }
+
+      if (!files.ebook || !files.ebook[0]) {
+        throw ApiError.badRequest('EPUB file is required');
+      }
+
+      let categoryNames = [];
+      if (categories) {
+        const catList = JSON.parse(categories);
+        for (const catName of catList) {
+          if (!catName?.trim()) continue;
+          
+          let cat = await Category.findOne({ name: catName.trim() });
+          
+          if (!cat) {
+            cat = await Category.create({
+              name: catName.trim(),
+              isActive: true,
+              needs_update: true
+            });
+          }
+          
+          categoryNames.push(cat.name);
+        }
+      }
+
+      let tagNames = [];
+      if (tags) {
+        const tagList = JSON.parse(tags);
+        tagNames = tagList.map(t => t.toLowerCase().trim()).filter(Boolean);
+      }
+
+      console.log('Uploading cover to Cloudinary...');
+      const coverFile = files.cover[0];
+      const coverResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'book-covers',
+            resource_type: 'image',
+            transformation: [
+              { width: 800, crop: 'limit' },
+              { quality: 'auto' },
+              { fetch_format: 'auto' }
+            ]
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(coverFile.buffer);
+      });
+
+      console.log('Cover uploaded:', coverResult.secure_url);
+
+      console.log('Uploading EPUB to Cloudinary...');
+      const ebookFile = files.ebook[0];
+      const ebookResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'ebooks',
+            resource_type: 'raw'
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(ebookFile.buffer);
+      });
+
+      console.log('EPUB uploaded:', ebookResult.secure_url);
+
+      const book_id = await this.generateBookId();
+      console.log('Generated book_id:', book_id);
+
+      const bookData = {
+        book_id,
+        title: title.trim(),
+        author: author.trim(),
+        author_id: author_id.trim(),
+        publisher: publisher.trim(),
+        year: parseInt(year, 10),
+        language: language || 'en',
+        pageCount: parseInt(pageCount, 10),
+        punchline: punchline.trim(),
+        blurb: blurb.trim(),
+        isbn: isbn?.trim() || undefined,
+        categories: categoryNames,
+        tags: tagNames,
+        status: status,
+        
+        coverImage_cloud: {
+          url: coverResult.secure_url,
+          public_id: coverResult.public_id,
+          width: coverResult.width,
+          height: coverResult.height,
+          format: coverResult.format
+        },
+        
+        epub: {
+          url: ebookResult.secure_url,
+          public_id: ebookResult.public_id,
+          size_bytes: ebookResult.bytes,
+          mime_type: 'application/epub+zip',
+          uploaded_at: new Date()
+        },
+        
+        upload_info: {
+          admin_id: adminUserId,
+          uploaded_at: new Date(),
+          published_at: status === 'published' ? new Date() : undefined
+        }
+      };
+
+      console.log('Creating book in database...');
+      const book = await Book.create(bookData);
+
+      console.log('Book created successfully:', book.book_id);
+
+      return {
+        book_id: book.book_id,
+        title: book.title,
+        author: book.author,
+        status: book.status,
+        primary_genre: book.primary_genre,
+        cover_url: book.coverImage_cloud.url,
+        epub_url: book.epub.url
+      };
+    } catch (error) {
+      console.error('Error in createBook service:', error);
+      
+      if (error.coverPublicId) {
+        try {
+          await cloudinary.uploader.destroy(error.coverPublicId);
+        } catch (cleanupErr) {
+          console.error('Failed to cleanup cover:', cleanupErr);
+        }
+      }
+      
+      if (error.ebookPublicId) {
+        try {
+          await cloudinary.uploader.destroy(error.ebookPublicId, { resource_type: 'raw' });
+        } catch (cleanupErr) {
+          console.error('Failed to cleanup ebook:', cleanupErr);
+        }
+      }
+      
+      throw error;
     }
-
-    const coverFile = files?.cover?.[0];
-    const ebookFile = files?.ebook?.[0];
-
-    if (!coverFile || !ebookFile) {
-      throw ApiError.badRequest('Cover file and ebook file are required');
-    }
-
-    const {
-      title,
-      publisher,
-      year,
-      language,
-      punchline,
-      blurb,
-      isbn,
-      pageCount,
-      status,
-      author_ids,
-      new_authors,
-      categories,
-      tags
-    } = body;
-
-    if (!title || !publisher || !year || !pageCount || !punchline || !blurb) {
-      throw ApiError.badRequest('Missing required fields (title, publisher, year, pageCount, punchline, blurb)');
-    }
-
-    const { mainAuthorId, mainAuthorName } = await this._resolveAuthors(author_ids, new_authors);
-
-    const categoryList = this._parseStringOrArray(categories);
-    const tagList = this._parseStringOrArray(tags);
-
-    const coverImage_cloud = await this._uploadCover(coverFile);
-    const epub = await this._uploadEpub(ebookFile);
-    const book_id = await this._generateNextBookId();
-
-    const book = new Book({
-      book_id,
-      title: title.trim(),
-      author: mainAuthorName,
-      author_id: mainAuthorId,
-      year: Number(year),
-      publisher: publisher.trim(),
-      language: language || 'en',
-      categories: categoryList,
-      punchline: punchline.trim(),
-      blurb: blurb.trim(),
-      coverImage_cloud,
-      epub,
-      isbn: isbn || undefined,
-      pageCount: Number(pageCount),
-      status: status || 'draft',
-      upload_info: {
-        admin_id: adminUserId.toString(),
-        uploaded_at: new Date(),
-        published_at: null
-      },
-      tags: tagList
-    });
-
-    await book.save();
-
-    return book;
   }
 }
 
