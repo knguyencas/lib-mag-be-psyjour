@@ -21,17 +21,12 @@ const upload = multer({
 
 /**
  * @swagger
- * /api/admin/books:
+ * /admin/books:
  *   post:
- *     summary: Create a new book (admin only)
- *     description: |
- *       Create new book, upload cover + ebook to Cloudinary, save metadata to MongoDB.
- *       primary_genre được auto xác định từ categories (pre-save hook trong Book model).
+ *     summary: Create a new book (Admin only)
  *     tags: [AdminBooks]
  *     security:
  *       - bearerAuth: []
- *     consumes:
- *       - multipart/form-data
  *     requestBody:
  *       required: true
  *       content:
@@ -41,50 +36,35 @@ const upload = multer({
  *             properties:
  *               title:
  *                 type: string
- *               publisher:
+ *               author:
  *                 type: string
- *               year:
- *                 type: number
- *               language:
+ *               description:
  *                 type: string
- *               punchline:
+ *               primary_genre:
  *                 type: string
- *               blurb:
- *                 type: string
- *               isbn:
- *                 type: string
- *               pageCount:
- *                 type: number
- *               status:
- *                 type: string
- *                 enum: [draft, published, archived]
  *               categories:
- *                 type: string
- *                 description: JSON array hoặc list tên category, ví dụ ["Psychology","Decision Science"]
+ *                 type: array
+ *                 items:
+ *                   type: string
  *               tags:
- *                 type: string
- *                 description: JSON array hoặc list tag, ví dụ ["dark academia","shadow work"]
- *               author_ids:
- *                 type: string
- *                 description: JSON array author_id đã tồn tại, ví dụ ["AU001","AU008"]
- *               new_authors:
- *                 type: string
- *                 description: JSON array author mới, ví dụ [{"name":"New Author"}]
- *               cover:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               coverImage:
  *                 type: string
  *                 format: binary
- *               ebook:
+ *               epubFile:
  *                 type: string
  *                 format: binary
  *     responses:
  *       201:
  *         description: Book created successfully
  *       400:
- *         description: Validation error
+ *         description: Invalid input data
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Forbidden (not admin)
+ *         description: Forbidden
  */
 router.post(
   '/books',
@@ -92,6 +72,157 @@ router.post(
   authorizeRoles('admin', 'super_admin'),
   upload.any(),
   (req, res, next) => adminBooksController.createBook(req, res, next)
+);
+
+/**
+ * @swagger
+ * /admin/books/manage:
+ *   get:
+ *     summary: Get list of books for admin management
+ *     tags: [AdminBooks]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of managed books
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+router.get(
+  '/books/manage',
+  authMiddleware,
+  authorizeRoles('admin', 'super_admin'),
+  (req, res, next) => adminBooksController.getManageBooks(req, res, next)
+);
+
+/**
+ * @swagger
+ * /admin/books/manage/{bookId}:
+ *   get:
+ *     summary: Get book detail for admin by ID
+ *     tags: [AdminBooks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Book ID
+ *     responses:
+ *       200:
+ *         description: Book detail fetched successfully
+ *       404:
+ *         description: Book not found
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+router.get(
+  '/books/manage/:bookId',
+  authMiddleware,
+  authorizeRoles('admin', 'super_admin'),
+  (req, res, next) => adminBooksController.getBookById(req, res, next)
+);
+
+/**
+ * @swagger
+ * /admin/books/manage/{bookId}:
+ *   put:
+ *     summary: Update book information (Admin only)
+ *     tags: [AdminBooks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Book ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               author:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               primary_genre:
+ *                 type: string
+ *               categories:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               coverImage:
+ *                 type: string
+ *                 format: binary
+ *               epubFile:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Book updated successfully
+ *       400:
+ *         description: Invalid update data
+ *       404:
+ *         description: Book not found
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+router.put(
+  '/books/manage/:bookId',
+  authMiddleware,
+  authorizeRoles('admin', 'super_admin'),
+  upload.any(),
+  (req, res, next) => adminBooksController.updateBook(req, res, next)
+);
+
+/**
+ * @swagger
+ * /admin/books/manage/{bookId}:
+ *   delete:
+ *     summary: Delete a book (Admin only)
+ *     tags: [AdminBooks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Book ID
+ *     responses:
+ *       200:
+ *         description: Book deleted successfully
+ *       404:
+ *         description: Book not found
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+router.delete(
+  '/books/manage/:bookId',
+  authMiddleware,
+  authorizeRoles('admin', 'super_admin'),
+  (req, res, next) => adminBooksController.deleteBook(req, res, next)
 );
 
 module.exports = router;
