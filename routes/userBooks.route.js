@@ -2,9 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { authMiddleware } = require('../middleware/auth');
-
-const userRatingsService = require('../services/userRatings.service');
-const userCommentsService = require('../services/userComments.service');
+const userBooksController = require('../controllers/userBooks.controller');
 
 /**
  * @swagger
@@ -13,215 +11,302 @@ const userCommentsService = require('../services/userComments.service');
  *   description: User endpoints for book ratings and comments
  */
 
+/**
+ * @swagger
+ * /api/books/{bookId}/rate:
+ *   post:
+ *     summary: Submit or update a rating for a book
+ *     tags: [UserBooks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Book ID (book_id)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               rating:
+ *                 type: number
+ *                 format: float
+ *                 minimum: 0
+ *                 maximum: 5
+ *               review:
+ *                 type: string
+ *                 description: Optional text review
+ *     responses:
+ *       200:
+ *         description: Rating submitted successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ */
+router.post(
+  '/:bookId/rate',
+  authMiddleware,
+  userBooksController.submitRating
+);
 
-// POST /api/books/:bookId/rate
-router.post('/:bookId/rate', authMiddleware, async (req, res, next) => {
-  try {
-    const { bookId } = req.params;
-    const userId = req.user._id;
-    const { rating, review } = req.body;
+/**
+ * @swagger
+ * /api/books/{bookId}/my-rating:
+ *   get:
+ *     summary: Get current user's rating for a book
+ *     tags: [UserBooks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Book ID (book_id)
+ *     responses:
+ *       200:
+ *         description: User rating retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  '/:bookId/my-rating',
+  authMiddleware,
+  userBooksController.getMyRating
+);
 
-    const result = await userRatingsService.submitRating(userId, bookId, {
-      rating,
-      review
-    });
+/**
+ * @swagger
+ * /api/books/{bookId}/my-rating:
+ *   delete:
+ *     summary: Delete current user's rating for a book
+ *     tags: [UserBooks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Book ID (book_id)
+ *     responses:
+ *       200:
+ *         description: Rating deleted successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.delete(
+  '/:bookId/my-rating',
+  authMiddleware,
+  userBooksController.deleteMyRating
+);
 
-    const Book = require('../models/Book');
-    const book = await Book.findOne({ book_id: bookId });
+/**
+ * @swagger
+ * /api/books/{bookId}/ratings:
+ *   get:
+ *     summary: Get all ratings for a book
+ *     tags: [UserBooks]
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Book ID (book_id)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: Book ratings retrieved successfully
+ */
+router.get(
+  '/:bookId/ratings',
+  userBooksController.getBookRatings
+);
 
-    res.status(200).json({
-      success: true,
-      message: 'Rating submitted successfully',
-      data: {
-        rating: result,
-        bookRating: book?.rating || 0,
-        bookRatingCount: book?.rating_count || 0
-      }
-    });
-  } catch (error) {
-    console.error('Error in rating submission:', error);
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'Failed to submit rating'
-    });
-  }
-});
+/**
+ * @swagger
+ * /api/books/{bookId}/comments:
+ *   post:
+ *     summary: Post a comment for a book
+ *     tags: [UserBooks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Book ID (book_id)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 description: Comment content
+ *     responses:
+ *       201:
+ *         description: Comment posted successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ */
+router.post(
+  '/:bookId/comments',
+  authMiddleware,
+  userBooksController.postComment
+);
 
-// GET /api/books/:bookId/my-rating
-router.get('/:bookId/my-rating', authMiddleware, async (req, res, next) => {
-  try {
-    const { bookId } = req.params;
-    const userId = req.user._id;
+/**
+ * @swagger
+ * /api/books/{bookId}/comments:
+ *   get:
+ *     summary: Get comments for a book
+ *     tags: [UserBooks]
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Book ID (book_id)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Page size
+ *     responses:
+ *       200:
+ *         description: Comments retrieved successfully
+ */
+router.get(
+  '/:bookId/comments',
+  userBooksController.getBookComments
+);
 
-    const rating = await userRatingsService.getUserRating(userId, bookId);
+/**
+ * @swagger
+ * /api/books/comments/{commentId}:
+ *   put:
+ *     summary: Update a comment
+ *     tags: [UserBooks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Comment ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 description: Updated content
+ *     responses:
+ *       200:
+ *         description: Comment updated successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (not the owner)
+ */
+router.put(
+  '/comments/:commentId',
+  authMiddleware,
+  userBooksController.updateComment
+);
 
-    res.status(200).json({
-      success: true,
-      message: 'User rating retrieved successfully',
-      data: rating
-    });
-  } catch (error) {
-    console.error('Error getting user rating:', error);
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'Failed to get rating'
-    });
-  }
-});
+/**
+ * @swagger
+ * /api/books/comments/{commentId}:
+ *   delete:
+ *     summary: Delete a comment
+ *     tags: [UserBooks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Comment ID
+ *     responses:
+ *       200:
+ *         description: Comment deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (not the owner)
+ */
+router.delete(
+  '/comments/:commentId',
+  authMiddleware,
+  userBooksController.deleteComment
+);
 
-// DELETE /api/books/:bookId/my-rating
-router.delete('/:bookId/my-rating', authMiddleware, async (req, res, next) => {
-  try {
-    const { bookId } = req.params;
-    const userId = req.user._id;
-
-    await userRatingsService.deleteUserRating(userId, bookId);
-
-    res.status(200).json({
-      success: true,
-      message: 'Rating deleted successfully',
-      data: null
-    });
-  } catch (error) {
-    console.error('Error deleting rating:', error);
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'Failed to delete rating'
-    });
-  }
-});
-
-// GET /api/books/:bookId/ratings
-router.get('/:bookId/ratings', async (req, res, next) => {
-  try {
-    const { bookId } = req.params;
-    const result = await userRatingsService.getBookRatings(bookId, req.query);
-
-    res.status(200).json({
-      success: true,
-      message: 'Book ratings retrieved successfully',
-      data: result.ratings,
-      pagination: result.pagination,
-      stats: result.stats
-    });
-  } catch (error) {
-    console.error('Error getting book ratings:', error);
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'Failed to get ratings'
-    });
-  }
-});
-
-// POST /api/books/:bookId/comments
-router.post('/:bookId/comments', authMiddleware, async (req, res, next) => {
-  try {
-    const { bookId } = req.params;
-    const userId = req.user._id;
-    const { content } = req.body;
-
-    const comment = await userCommentsService.postComment(userId, bookId, content);
-
-    res.status(201).json({
-      success: true,
-      message: 'Comment posted successfully',
-      data: comment
-    });
-  } catch (error) {
-    console.error('Error posting comment:', error);
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'Failed to post comment'
-    });
-  }
-});
-
-// GET /api/books/:bookId/comments
-router.get('/:bookId/comments', async (req, res, next) => {
-  try {
-    const { bookId } = req.params;
-    const result = await userCommentsService.getBookComments(bookId, req.query);
-
-    res.status(200).json({
-      success: true,
-      message: 'Comments retrieved successfully',
-      data: result.comments,
-      pagination: result.pagination
-    });
-  } catch (error) {
-    console.error('Error getting comments:', error);
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'Failed to get comments'
-    });
-  }
-});
-
-// PUT /api/books/comments/:commentId
-router.put('/comments/:commentId', authMiddleware, async (req, res, next) => {
-  try {
-    const { commentId } = req.params;
-    const userId = req.user._id;
-    const { content } = req.body;
-
-    const comment = await userCommentsService.updateComment(userId, commentId, content);
-
-    res.status(200).json({
-      success: true,
-      message: 'Comment updated successfully',
-      data: comment
-    });
-  } catch (error) {
-    console.error('Error updating comment:', error);
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'Failed to update comment'
-    });
-  }
-});
-
-// DELETE /api/books/comments/:commentId
-router.delete('/comments/:commentId', authMiddleware, async (req, res, next) => {
-  try {
-    const { commentId } = req.params;
-    const userId = req.user._id;
-
-    await userCommentsService.deleteComment(userId, commentId);
-
-    res.status(200).json({
-      success: true,
-      message: 'Comment deleted successfully',
-      data: null
-    });
-  } catch (error) {
-    console.error('Error deleting comment:', error);
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'Failed to delete comment'
-    });
-  }
-});
-
-// GET /api/books/:bookId/my-comment
-router.get('/:bookId/my-comment', authMiddleware, async (req, res, next) => {
-  try {
-    const { bookId } = req.params;
-    const userId = req.user._id;
-
-    const comment = await userCommentsService.getUserComment(userId, bookId);
-
-    res.status(200).json({
-      success: true,
-      message: 'User comment retrieved successfully',
-      data: comment
-    });
-  } catch (error) {
-    console.error('Error getting user comment:', error);
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'Failed to get comment'
-    });
-  }
-});
+/**
+ * @swagger
+ * /api/books/{bookId}/my-comment:
+ *   get:
+ *     summary: Get current user's comment on a specific book
+ *     tags: [UserBooks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Book ID (book_id)
+ *     responses:
+ *       200:
+ *         description: User comment retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  '/:bookId/my-comment',
+  authMiddleware,
+  userBooksController.getMyComment
+);
 
 module.exports = router;

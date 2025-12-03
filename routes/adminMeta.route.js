@@ -1,4 +1,3 @@
-// routes/adminMeta.route.js
 const express = require('express');
 const router = express.Router();
 const adminMetaController = require('../controllers/adminMeta.controller');
@@ -16,8 +15,8 @@ const { authMiddleware, authorizeRoles } = require('../middleware/auth');
  * /api/admin/meta/authors/search:
  *   get:
  *     summary: Search authors by name (admin only)
- *     description: |
- *       Fiding author through substring, matching name or pen names.
+ *     description: >
+ *       Finding authors through substring, matching name or pen names.
  *       Dùng cho autocomplete trên trang admin-add-book.
  *     tags: [AdminMeta]
  *     security:
@@ -41,7 +40,7 @@ router.get(
   '/meta/authors/search',
   authMiddleware,
   authorizeRoles('admin', 'super_admin'),
-  (req, res, next) => adminMetaController.searchAuthors(req, res, next)
+  adminMetaController.searchAuthors
 );
 
 /**
@@ -49,6 +48,7 @@ router.get(
  * /api/admin/meta/categories/search:
  *   get:
  *     summary: Search categories by name (admin only)
+ *     description: Search categories for admin-add-book autocomplete.
  *     tags: [AdminMeta]
  *     security:
  *       - bearerAuth: []
@@ -71,7 +71,7 @@ router.get(
   '/meta/categories/search',
   authMiddleware,
   authorizeRoles('admin', 'super_admin'),
-  (req, res, next) => adminMetaController.searchCategories(req, res, next)
+  adminMetaController.searchCategories
 );
 
 /**
@@ -79,6 +79,7 @@ router.get(
  * /api/admin/meta/tags/search:
  *   get:
  *     summary: Search tags by name (admin only)
+ *     description: Search tags for admin-add-book autocomplete.
  *     tags: [AdminMeta]
  *     security:
  *       - bearerAuth: []
@@ -101,7 +102,7 @@ router.get(
   '/meta/tags/search',
   authMiddleware,
   authorizeRoles('admin', 'super_admin'),
-  (req, res, next) => adminMetaController.searchTags(req, res, next)
+  adminMetaController.searchTags
 );
 
 module.exports = router;

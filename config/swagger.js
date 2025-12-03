@@ -1,3 +1,4 @@
+const path = require('path');
 const swaggerJsdoc = require('swagger-jsdoc');
 
 const options = {
@@ -6,7 +7,8 @@ const options = {
     info: {
       title: 'Psyche Journey Library API',
       version: '1.0.0',
-      description: 'API documentation for Psyche Journey backend (books, authors, auth, admin, ...)',
+      description:
+        'API documentation for Psyche Journey backend (books, authors, auth, admin, ...)',
     },
     servers: [
       {
@@ -24,19 +26,16 @@ const options = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'Enter your JWT token in format: Bearer <token>'
+          description: 'Enter your JWT token in format: Bearer <token>',
         },
       },
     },
-    // security: [
-    //   {
-    //     bearerAuth: [],
-    //   },
-    // ],
   },
   apis: [
-    './routes/*.js',
-    './models/*.js',
+    path.join(__dirname, '..', 'routes', '*.js'),
+    path.join(__dirname, '..', 'routes', '**', '*.js'),
+    path.join(__dirname, '..', 'models', '*.js'),
+    path.join(__dirname, '..', 'models', '**', '*.js'),
   ],
 };
 
