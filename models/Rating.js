@@ -77,6 +77,7 @@ ratingSchema.pre('save', async function(next) {
   next();
 });
 
+
 ratingSchema.post('save', async function() {
   console.log('Rating saved, updating book average...');
   await updateBookAverageRating(this.book_id);

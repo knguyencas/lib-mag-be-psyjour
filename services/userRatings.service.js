@@ -28,7 +28,7 @@ class UserRatingsService {
     });
 
     if (existingRating) {
-      console.log(`Updating existing rating for user ${userId} on book ${bookId}`);
+      console.log(`📝 Updating existing rating for user ${userId} on book ${bookId}`);
       existingRating.rating = rating;
       if (review !== undefined) {
         existingRating.review = review;
@@ -41,7 +41,7 @@ class UserRatingsService {
     } else {
       const rating_id = await this.generateRatingId();
       
-      console.log(`Creating new rating for user ${userId} on book ${bookId}`);
+      console.log(`➕ Creating new rating for user ${userId} on book ${bookId}`);
       const newRating = await Rating.create({
         rating_id,
         user_id: userId,

@@ -17,7 +17,7 @@ const commentSchema = new mongoose.Schema({
   
   target_type: {
     type: String,
-    enum: ['perspective_post', 'visual_post'],
+    enum: ['perspective_post', 'visual_post', 'book'],
     required: true,
     index: true
   },
@@ -91,21 +91,18 @@ const commentSchema = new mongoose.Schema({
   collection: 'comments'
 });
 
-// Indexes
 commentSchema.index({ target_type: 1, target_id: 1, status: 1 });
 commentSchema.index({ parent_comment_id: 1 });
 commentSchema.index({ user_id: 1, createdAt: -1 });
 commentSchema.index({ score: -1 });
 commentSchema.index({ createdAt: -1 });
 
-// Update parent comment reply count
 commentSchema.post('save', async function() {
   if (this.parent_comment_id && this.status === 'approved') {
     await updateReplyCount(this.parent_comment_id);
   }
   
-  // Update post comment count
-  await updatePostCommentCount(this.target_type, this.target_id);
+  await updateTargetCommentCount(this.target_type, this.target_id);
 });
 
 commentSchema.post('remove', async function() {
@@ -113,7 +110,15 @@ commentSchema.post('remove', async function() {
     await updateReplyCount(this.parent_comment_id);
   }
   
-  await updatePostCommentCount(this.target_type, this.target_id);
+  await updateTargetCommentCount(this.target_type, this.target_id);
+});
+
+commentSchema.post('deleteOne', { document: true, query: false }, async function() {
+  if (this.parent_comment_id) {
+    await updateReplyCount(this.parent_comment_id);
+  }
+  
+  await updateTargetCommentCount(this.target_type, this.target_id);
 });
 
 async function updateReplyCount(parentCommentId) {
@@ -136,7 +141,7 @@ async function updateReplyCount(parentCommentId) {
   }
 }
 
-async function updatePostCommentCount(targetType, targetId) {
+async function updateTargetCommentCount(targetType, targetId) {
   try {
     const Comment = mongoose.model('Comment');
     
@@ -155,6 +160,9 @@ async function updatePostCommentCount(targetType, targetId) {
     } else if (targetType === 'visual_post') {
       Model = require('./VisualPost');
       idField = 'post_id';
+    } else if (targetType === 'book') {
+      Model = require('./Book');
+      idField = 'book_id';
     }
     
     if (Model) {
@@ -163,10 +171,10 @@ async function updatePostCommentCount(targetType, targetId) {
         { comment_count: count }
       );
       
-      console.log(`✅ Updated ${targetType} ${targetId} comment count: ${count}`);
+      console.log(`Updated ${targetType} ${targetId} comment count: ${count}`);
     }
   } catch (error) {
-    console.error('Error updating post comment count:', error);
+    console.error('Error updating target comment count:', error);
   }
 }
 
