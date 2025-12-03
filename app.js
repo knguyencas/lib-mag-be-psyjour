@@ -19,11 +19,9 @@ const visualPostRoute = require('./routes/visualPost.route');
 const perspectivePostRoute = require('./routes/perspectivePost.route');
 const userPerspectivePostsRoutes = require('./routes/userPerspectivePosts.route');
 const userVotesRoutes = require('./routes/userVotes.route');
-
-
+const userReadingProgressRouter = require('./routes/userReadingProgress.route');
 const userBooksRoutes = require('./routes/userBooks.route');
 const userFavoritesRoutes = require('./routes/userFavorites.route');
-const userReadingProgressRoutes = require('./routes/userReadingProgress.route');
 
 const errorHandler = require('./middleware/errorHandler');
 
@@ -57,7 +55,7 @@ app.use('/api/perspectivepost', perspectivePostRoute);
 app.use('/api/perspective-posts', userPerspectivePostsRoutes);
 app.use('/api/votes', userVotesRoutes);
 app.use('/api/favorites', userFavoritesRoutes);
-app.use('/api/reading-progress', userReadingProgressRoutes);
+app.use('/api', userReadingProgressRouter);
 
 app.use('/api/books', userBooksRoutes);
 

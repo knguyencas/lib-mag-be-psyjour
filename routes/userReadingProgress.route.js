@@ -12,38 +12,7 @@ const readingProgressController = require('../controllers/userReadingProgress.co
 
 /**
  * @swagger
- * /reading-progress/recently-read/list:
- *   get:
- *     summary: Get list of recently read books of current user
- *     tags: [ReadingProgress]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *         description: Page number (optional)
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *         description: Items per page (optional)
- *     responses:
- *       200:
- *         description: Successfully returned recently read books
- *       401:
- *         description: Unauthorized
- */
-router.get(
-  '/recently-read/list',
-  authMiddleware,
-  readingProgressController.getRecentlyRead
-);
-
-/**
- * @swagger
- * /reading-progress/{bookId}:
+ * /books/{bookId}/progress:
  *   post:
  *     summary: Update reading progress for a book
  *     tags: [ReadingProgress]
@@ -55,14 +24,24 @@ router.get(
  *         required: true
  *         schema:
  *           type: string
- *         description: Book ID
+ *         description: Book ID (vd: BK001)
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             description: Progress payload (position, percentage, timestamps, etc.)
+ *             properties:
+ *               chapter_index:
+ *                 type: integer
+ *               scroll_position:
+ *                 type: number
+ *               progress_percentage:
+ *                 type: number
+ *             example:
+ *               chapter_index: 3
+ *               scroll_position: 0
+ *               progress_percentage: 25
  *     responses:
  *       200:
  *         description: Progress updated
@@ -72,14 +51,14 @@ router.get(
  *         description: Unauthorized
  */
 router.post(
-  '/:bookId',
+  '/books/:bookId/progress',
   authMiddleware,
   readingProgressController.updateProgress
 );
 
 /**
  * @swagger
- * /reading-progress/{bookId}:
+ * /books/{bookId}/progress:
  *   get:
  *     summary: Get reading progress for a specific book
  *     tags: [ReadingProgress]
@@ -97,16 +76,44 @@ router.post(
  *         description: Progress returned successfully
  *       401:
  *         description: Unauthorized
+ *       404:
+ *         description: No progress found
  */
 router.get(
-  '/:bookId',
+  '/books/:bookId/progress',
   authMiddleware,
   readingProgressController.getProgress
 );
 
 /**
  * @swagger
- * /reading-progress/{bookId}:
+ * /reading/recently-read:
+ *   get:
+ *     summary: Get list of recently read books of current user
+ *     tags: [ReadingProgress]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Items per page (optional, default 10)
+ *     responses:
+ *       200:
+ *         description: Successfully returned recently read books
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  '/reading/recently-read',
+  authMiddleware,
+  readingProgressController.getRecentlyRead
+);
+
+/**
+ * @swagger
+ * /books/{bookId}/progress:
  *   delete:
  *     summary: Delete reading progress for a book
  *     tags: [ReadingProgress]
@@ -126,7 +133,7 @@ router.get(
  *         description: Unauthorized
  */
 router.delete(
-  '/:bookId',
+  '/books/:bookId/progress',
   authMiddleware,
   readingProgressController.deleteProgress
 );
