@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-// VERSION 1: Destructured from auth.js (MOST COMMON)
-// If this doesn't work, try V2 or V3
 const { authMiddleware } = require('../middleware/auth');
 
 const userRatingsService = require('../services/userRatings.service');
@@ -15,12 +13,8 @@ const userCommentsService = require('../services/userComments.service');
  *   description: User endpoints for book ratings and comments
  */
 
-// ==================== RATINGS ====================
 
-/**
- * Submit or update rating for a book
- * POST /api/books/:bookId/rate
- */
+// POST /api/books/:bookId/rate
 router.post('/:bookId/rate', authMiddleware, async (req, res, next) => {
   try {
     const { bookId } = req.params;
@@ -32,7 +26,6 @@ router.post('/:bookId/rate', authMiddleware, async (req, res, next) => {
       review
     });
 
-    // Get updated book rating
     const Book = require('../models/Book');
     const book = await Book.findOne({ book_id: bookId });
 
@@ -54,10 +47,7 @@ router.post('/:bookId/rate', authMiddleware, async (req, res, next) => {
   }
 });
 
-/**
- * Get user's rating for a book
- * GET /api/books/:bookId/my-rating
- */
+// GET /api/books/:bookId/my-rating
 router.get('/:bookId/my-rating', authMiddleware, async (req, res, next) => {
   try {
     const { bookId } = req.params;
@@ -79,10 +69,7 @@ router.get('/:bookId/my-rating', authMiddleware, async (req, res, next) => {
   }
 });
 
-/**
- * Delete user's rating
- * DELETE /api/books/:bookId/my-rating
- */
+// DELETE /api/books/:bookId/my-rating
 router.delete('/:bookId/my-rating', authMiddleware, async (req, res, next) => {
   try {
     const { bookId } = req.params;
@@ -104,10 +91,7 @@ router.delete('/:bookId/my-rating', authMiddleware, async (req, res, next) => {
   }
 });
 
-/**
- * Get all ratings for a book (public)
- * GET /api/books/:bookId/ratings
- */
+// GET /api/books/:bookId/ratings
 router.get('/:bookId/ratings', async (req, res, next) => {
   try {
     const { bookId } = req.params;
@@ -129,12 +113,7 @@ router.get('/:bookId/ratings', async (req, res, next) => {
   }
 });
 
-// ==================== COMMENTS ====================
-
-/**
- * Post a comment on a book
- * POST /api/books/:bookId/comments
- */
+// POST /api/books/:bookId/comments
 router.post('/:bookId/comments', authMiddleware, async (req, res, next) => {
   try {
     const { bookId } = req.params;
@@ -157,10 +136,7 @@ router.post('/:bookId/comments', authMiddleware, async (req, res, next) => {
   }
 });
 
-/**
- * Get comments for a book (public)
- * GET /api/books/:bookId/comments
- */
+// GET /api/books/:bookId/comments
 router.get('/:bookId/comments', async (req, res, next) => {
   try {
     const { bookId } = req.params;

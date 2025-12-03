@@ -278,6 +278,166 @@ class UserCommentsService {
 
     return comment;
   }
+
+  // For perspective posts
+
+  /**
+   * Post comment or reply
+   * @param {String} userId
+   * @param {String} targetId
+   * @param {String} content
+   * @param {String} parentCommentId
+   */
+  async postComment(userId, targetId, content, parentCommentId = null) {
+    if (!content || content.trim().length === 0) {
+      throw ApiError.badRequest('Comment content is required');
+    }
+
+    if (content.length > 2000) {
+      throw ApiError.badRequest('Comment cannot exceed 2000 characters');
+    }
+
+    const targetType = this._getTargetType(targetId);
+    
+    await this._validateTarget(targetType, targetId);
+
+    if (parentCommentId) {
+      const parentComment = await Comment.findOne({ 
+        comment_id: parentCommentId,
+        target_type: targetType,
+        target_id: targetId
+      });
+
+      if (!parentComment) {
+        throw ApiError.notFound('Parent comment not found');
+      }
+
+      if (parentComment.parent_comment_id) {
+        throw ApiError.badRequest('Cannot reply to a reply');
+      }
+    }
+
+    const comment_id = await this.generateCommentId();
+    
+    const newComment = await Comment.create({
+      comment_id,
+      user_id: userId,
+      target_type: targetType,
+      target_id: targetId,
+      content: content.trim(),
+      status: 'approved',
+      parent_comment_id: parentCommentId
+    });
+
+    await newComment.populate('user_id', 'username email');
+
+    console.log(`Created ${parentCommentId ? 'reply' : 'comment'} ${comment_id} on ${targetType} ${targetId}`);
+    return newComment;
+  }
+
+  async getCommentsWithReplies(targetId, queryParams) {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = queryParams;
+
+    const targetType = this._getTargetType(targetId);
+
+    const filter = { 
+      target_type: targetType,
+      target_id: targetId,
+      status: 'approved',
+      parent_comment_id: null
+    };
+
+    const skip = (page - 1) * limit;
+    const sort = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    const parentComments = await Comment.find(filter)
+      .populate('user_id', 'username')
+      .select('-__v')
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const commentIds = parentComments.map(c => c.comment_id);
+    
+    const replies = await Comment.find({
+      target_type: targetType,
+      target_id: targetId,
+      status: 'approved',
+      parent_comment_id: { $in: commentIds }
+    })
+      .populate('user_id', 'username')
+      .select('-__v')
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const repliesMap = {};
+    replies.forEach(reply => {
+      if (!repliesMap[reply.parent_comment_id]) {
+        repliesMap[reply.parent_comment_id] = [];
+      }
+      repliesMap[reply.parent_comment_id].push(reply);
+    });
+
+    const commentsWithReplies = parentComments.map(comment => ({
+      ...comment,
+      replies: repliesMap[comment.comment_id] || []
+    }));
+
+    const total = await Comment.countDocuments(filter);
+
+    return {
+      comments: commentsWithReplies,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  async deleteComment(userId, commentId) {
+    const comment = await Comment.findOne({ comment_id: commentId });
+
+    if (!comment) {
+      throw ApiError.notFound('Comment not found');
+    }
+
+    if (comment.user_id.toString() !== userId.toString()) {
+      throw ApiError.forbidden('You can only delete your own comments');
+    }
+
+    console.log(`Deleting comment ${commentId}`);
+
+    if (!comment.parent_comment_id) {
+      const replyCount = await Comment.countDocuments({
+        parent_comment_id: commentId,
+        target_type: comment.target_type,
+        target_id: comment.target_id
+      });
+
+      if (replyCount > 0) {
+        await Comment.deleteMany({
+          parent_comment_id: commentId,
+          target_type: comment.target_type,
+          target_id: comment.target_id
+        });
+        console.log(`Deleted ${replyCount} replies`);
+      }
+    }
+
+    await Comment.deleteOne({ comment_id: commentId });
+
+    console.log(`Deleted comment ${commentId}`);
+    return true;
+  }
 }
 
 module.exports = new UserCommentsService();
