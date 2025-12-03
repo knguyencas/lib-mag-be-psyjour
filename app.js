@@ -18,6 +18,7 @@ const adminManagePostsRoutes = require('./routes/adminManagePosts.route');
 const visualPostRoute = require('./routes/visualPost.route');
 const perspectivePostRoute = require('./routes/perspectivePost.route');
 const userPerspectivePostsRoutes = require('./routes/userPerspectivePosts.route');
+const userVotesRoutes = require('./routes/userVotes.route');
 
 
 const userBooksRoutes = require('./routes/userBooks.route');
@@ -52,6 +53,7 @@ app.use('/api/admin/posts', adminManagePostsRoutes);
 app.use('/api/visualpost', visualPostRoute);
 app.use('/api/perspectivepost', perspectivePostRoute);
 app.use('/api/perspective-posts', userPerspectivePostsRoutes);
+app.use('/api/votes', userVotesRoutes);
 
 app.use('/api/books', userBooksRoutes);
 
