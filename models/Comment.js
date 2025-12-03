@@ -17,7 +17,7 @@ const commentSchema = new mongoose.Schema({
   
   target_type: {
     type: String,
-    enum: ['perspective_post', 'visual_post', 'book'],
+    enum: ['perspective_post', 'book'],
     required: true,
     index: true
   },
@@ -135,7 +135,7 @@ async function updateReplyCount(parentCommentId) {
       { reply_count: count }
     );
     
-    console.log(`✅ Updated comment ${parentCommentId} reply count: ${count}`);
+    console.log(`Updated comment ${parentCommentId} reply count: ${count}`);
   } catch (error) {
     console.error('Error updating reply count:', error);
   }
@@ -157,9 +157,6 @@ async function updateTargetCommentCount(targetType, targetId) {
     if (targetType === 'perspective_post') {
       Model = require('./PerspectivePost');
       idField = 'post_id';
-    } else if (targetType === 'visual_post') {
-      Model = require('./VisualPost');
-      idField = 'post_id';
     } else if (targetType === 'book') {
       Model = require('./Book');
       idField = 'book_id';
@@ -168,10 +165,10 @@ async function updateTargetCommentCount(targetType, targetId) {
     if (Model) {
       await Model.updateOne(
         { [idField]: targetId },
-        { comment_count: count }
+        { commentsCount: count }
       );
       
-      console.log(`Updated ${targetType} ${targetId} comment count: ${count}`);
+      console.log(`Updated ${targetType} ${targetId} comment count: 💬${count}`);
     }
   } catch (error) {
     console.error('Error updating target comment count:', error);

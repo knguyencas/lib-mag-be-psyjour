@@ -1,5 +1,6 @@
 const VisualPost = require('../models/VisualPost');
 const User = require('../models/User');
+const Vote = require('../models/Vote');
 const cloudinary = require('../config/cloudinary');
 const streamifier = require('streamifier');
 
@@ -35,11 +36,6 @@ const _generateNextPostId = async () => {
   return `VP${String(nextNumber).padStart(3, '0')}`;
 };
 
-/**
- * @desc    Create a new visual post
- * @route   POST /api/visualpost
- * @access  Private (requires authentication)
- */
 exports.createVisualPost = async (req, res) => {
   try {
     const { title, content, tags } = req.body;
@@ -130,11 +126,6 @@ exports.createVisualPost = async (req, res) => {
   }
 };
 
-/**
- * @desc    Get current user's posts (both visual and perspective posts)
- * @route   GET /api/visualpost/my-posts
- * @access  Private (requires authentication)
- */
 exports.getUserPosts = async (req, res) => {
   try {
     const userId = req.userId;
@@ -161,11 +152,7 @@ exports.getUserPosts = async (req, res) => {
     });
   }
 };
-/**
- * @desc    Get all published visual posts (public)
- * @route   GET /api/visualpost
- * @access  Public
- */
+
 exports.getPublishedPosts = async (req, res) => {
   try {
     const { page = 1, limit = 12, sort = 'newest' } = req.query;
@@ -192,11 +179,24 @@ exports.getPublishedPosts = async (req, res) => {
       .skip((page - 1) * limit)
       .populate('author_id', 'username displayName avatar');
 
+    const postsWithCounts = await Promise.all(posts.map(async (post) => {
+      const likeCount = await Vote.countDocuments({
+        target_type: 'visual_post',
+        target_id: post.post_id,
+        vote_type: 'like'
+      });
+
+      return {
+        ...post.toObject(),
+        likes: likeCount
+      };
+    }));
+
     const count = await VisualPost.countDocuments(query);
 
     res.status(200).json({
       success: true,
-      data: posts,
+      data: postsWithCounts,
       pagination: {
         total: count,
         page: parseInt(page),
@@ -214,11 +214,6 @@ exports.getPublishedPosts = async (req, res) => {
   }
 };
 
-/**
- * @desc    Get a single visual post by ID
- * @route   GET /api/visualpost/:id
- * @access  Public
- */
 exports.getPostById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -233,9 +228,20 @@ exports.getPostById = async (req, res) => {
       });
     }
 
+    const likeCount = await Vote.countDocuments({
+      target_type: 'visual_post',
+      target_id: post.post_id,
+      vote_type: 'like'
+    });
+
+    const postWithCounts = {
+      ...post.toObject(),
+      likes: likeCount
+    };
+
     res.status(200).json({
       success: true,
-      data: post,
+      data: postWithCounts,
     });
   } catch (error) {
     console.error('Error fetching post by ID:', error);

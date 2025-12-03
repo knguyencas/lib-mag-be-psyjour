@@ -30,7 +30,7 @@ const voteSchema = new mongoose.Schema({
   
   vote_type: {
     type: String,
-    enum: ['upvote', 'downvote'],
+    enum: ['upvote', 'downvote', 'like'],
     required: true
   }
   
@@ -86,24 +86,47 @@ async function updateVoteCounts(targetType, targetId) {
       }
     ]);
     
-    const upvotes = stats.find(s => s._id === 'upvote')?.count || 0;
-    const downvotes = stats.find(s => s._id === 'downvote')?.count || 0;
-    
     let Model;
     let idField;
     
     if (targetType === 'perspective_post') {
+      const upvotes = stats.find(s => s._id === 'upvote')?.count || 0;
+      const downvotes = stats.find(s => s._id === 'downvote')?.count || 0;
+      
       Model = require('./PerspectivePost');
       idField = 'post_id';
+      
+      await Model.updateOne(
+        { [idField]: targetId },
+        { 
+          upvotes,
+          downvotes,
+          score: upvotes - downvotes
+        }
+      );
+      
+      console.log(`Updated ${targetType} ${targetId} votes: ↑${upvotes} ↓${downvotes}`);
+      
     } else if (targetType === 'visual_post') {
+      const likes = stats.find(s => s._id === 'like')?.count || 0;
+      
       Model = require('./VisualPost');
       idField = 'post_id';
+      
+      await Model.updateOne(
+        { [idField]: targetId },
+        { likes }
+      );
+      
+      console.log(`Updated ${targetType} ${targetId} likes: ${likes}`);
+      
     } else if (targetType === 'comment') {
+      const upvotes = stats.find(s => s._id === 'upvote')?.count || 0;
+      const downvotes = stats.find(s => s._id === 'downvote')?.count || 0;
+      
       Model = require('./Comment');
       idField = 'comment_id';
-    }
-    
-    if (Model) {
+      
       await Model.updateOne(
         { [idField]: targetId },
         { 
