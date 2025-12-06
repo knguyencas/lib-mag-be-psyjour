@@ -30,11 +30,9 @@ var app = express();
 var swaggerUi = require('swagger-ui-express');
 var swaggerSpec = require('./config/swagger');
 
-app.use(cors());
-
 const allowedOrigins = [
-  'http://localhost:5173', 
-  'https://lib-mag.vercel.app/'
+  'http://localhost:5173',
+  'https://lib-mag.vercel.app'
 ];
 
 app.use(cors({
@@ -46,7 +44,9 @@ app.use(cors({
     }
     return callback(null, true);
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(logger('dev'));
