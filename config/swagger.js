@@ -14,11 +14,11 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:3000/api',
+        url: 'http://localhost:3000',  // ← REMOVED /api
         description: 'Development server'
       },
       {
-        url: 'https://lib-mag-be-psyjour.onrender.com/api',
+        url: 'https://lib-mag-be-psyjour.onrender.com',  // ← REMOVED /api
         description: 'Production server'
       }
     ],
@@ -32,59 +32,6 @@ const options = {
         }
       },
       schemas: {
-        Book: {
-          type: 'object',
-          properties: {
-            book_id: { type: 'string', example: 'BK001' },
-            title: { type: 'string' },
-            author: { type: 'string' },
-            author_id: { type: 'string' },
-            year: { type: 'integer' },
-            publisher: { type: 'string' },
-            language: { type: 'string', enum: ['en', 'vi', 'fr', 'de', 'es'] },
-            primary_genre: { type: 'string' },
-            categories: { type: 'array', items: { type: 'string' } },
-            tags: { type: 'array', items: { type: 'string' } },
-            punchline: { type: 'string' },
-            blurb: { type: 'string' },
-            pageCount: { type: 'integer' },
-            rating: { type: 'number', format: 'float' },
-            status: { 
-              type: 'string', 
-              enum: ['draft', 'published', 'archived'] 
-            },
-            featured: { type: 'boolean' },
-            view_count: { type: 'integer' },
-            download_count: { type: 'integer' }
-          }
-        },
-        ApiResponse: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            message: { type: 'string' },
-            data: { type: 'object' },
-            statusCode: { type: 'integer' }
-          }
-        },
-        ApiError: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean', example: false },
-            message: { type: 'string' },
-            statusCode: { type: 'integer' },
-            errors: { type: 'array', items: { type: 'string' } }
-          }
-        },
-        Pagination: {
-          type: 'object',
-          properties: {
-            page: { type: 'integer' },
-            limit: { type: 'integer' },
-            total: { type: 'integer' },
-            pages: { type: 'integer' }
-          }
-        }
       }
     },
     tags: [
@@ -94,7 +41,7 @@ const options = {
       { name: 'AdminBooks', description: 'Admin book operations' },
       { name: 'AdminManageBooks', description: 'Admin book list management' },
       { name: 'AdminManagePosts', description: 'Admin post moderation' },
-      { name: 'AdminMeta', description: 'Admin metadata helpers' },
+      { name: 'AdminMeta', description: 'Admin metadata helpers (authors, categories, tags)' },
       { name: 'AdminUser', description: 'Admin user management' },
       { name: 'UserBooks', description: 'User book interactions' },
       { name: 'Favorites', description: 'User favorites' },
@@ -105,10 +52,7 @@ const options = {
   },
   apis: [
     './routes/*.js',
-    './routes/*.route.js',
-    './controllers/*.js',
-    './controllers/*.controller.js',
-    './models/*.js'
+    './routes/*.route.js'
   ]
 };
 

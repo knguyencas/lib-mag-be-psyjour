@@ -23,9 +23,15 @@ class AuthController {
         throw ApiError.badRequest('Password must be at least 8 characters');
       }
 
-      if (email === '' || (email && email.trim() === '')) {
+      if (!email || (typeof email === 'string' && email.trim() === '')) {
         email = undefined;
       }
+
+      console.log('Register request:', {
+        username: trimmedUsername,
+        email: email || 'null',
+        emailType: typeof email
+      });
 
       const result = await authService.registerUser(username, email, password);
 

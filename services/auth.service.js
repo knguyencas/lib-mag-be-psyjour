@@ -11,12 +11,18 @@ class AuthService {
       throw ApiError.badRequest('Username must be at least 3 characters');
     }
 
+    const existingUsername = await User.findOne({ username: trimmedUsername });
+    if (existingUsername) {
+      throw ApiError.conflict('Username already exists');
+    }
+
     let normalizedEmail = undefined;
     
-    if (email && typeof email === 'string') {
+    if (email !== undefined && email !== null && typeof email === 'string') {
       const trimmedEmail = email.trim();
       
       if (trimmedEmail === '') {
+        console.log('Email is empty string, treating as undefined');
         normalizedEmail = undefined;
       } else {
         normalizedEmail = trimmedEmail.toLowerCase();
@@ -26,19 +32,26 @@ class AuthService {
           throw ApiError.badRequest('Invalid email format');
         }
         
+        console.log('Checking if email exists:', normalizedEmail);
+        
         const existingEmail = await User.findOne({ 
-          email: normalizedEmail,
-          email: { $exists: true, $ne: null, $ne: '' }
-        });
+          email: normalizedEmail
+        }).lean();
+        
+        console.log('Query result:', existingEmail ? 'Found' : 'Not found');
+        
         if (existingEmail) {
+          console.log('Email already exists:', {
+            username: existingEmail.username,
+            email: existingEmail.email
+          });
           throw ApiError.conflict('Email already exists');
         }
+        
+        console.log('Email is available');
       }
-    }
-
-    const existingUsername = await User.findOne({ username: trimmedUsername });
-    if (existingUsername) {
-      throw ApiError.conflict('Username already exists');
+    } else {
+      console.log('No email provided (undefined/null)');
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -55,15 +68,22 @@ class AuthService {
       userData.email = normalizedEmail;
     }
 
-    console.log('userData before save:', userData);
+    console.log('Creating user with data:', {
+      username: userData.username,
+      email: userData.email || 'null',
+      hasEmail: !!userData.email,
+      role: userData.role
+    });
 
     const newUser = new User(userData);
     
-    console.log('newUser before save:', newUser.toObject());
-    
     await newUser.save();
     
-    console.log('newUser after save:', newUser.toObject());
+    console.log('User created successfully:', {
+      id: newUser._id,
+      username: newUser.username,
+      email: newUser.email || 'null'
+    });
 
     const token = this._generateToken(newUser);
 
@@ -88,8 +108,7 @@ class AuthService {
     let query;
     if (isEmail) {
       query = { 
-        email: trimmed.toLowerCase(),
-        email: { $exists: true, $ne: null, $ne: '' }
+        email: trimmed.toLowerCase()
       };
     } else {
       query = { username: trimmed };

@@ -9,6 +9,13 @@ const userSchema = new mongoose.Schema({
     minlength: 3
   },
 
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    sparse: true,
+  },
+
   password: {
     type: String,
     required: true
@@ -42,15 +49,16 @@ const userSchema = new mongoose.Schema({
   strict: false
 });
 
+// Username index
 userSchema.index({ username: 1 });
 
 userSchema.index(
   { email: 1 }, 
   { 
-    unique: true, 
+    unique: true,
     sparse: true,
     partialFilterExpression: { 
-      email: { $exists: true, $ne: null, $ne: '' } 
+      email: { $exists: true, $type: 'string', $ne: '' } 
     }
   }
 );
@@ -60,8 +68,13 @@ userSchema.pre('validate', function(next) {
     const trimmed = this.email.trim();
     if (trimmed === '') {
       this.email = undefined;
+    } else {
+      this.email = trimmed.toLowerCase();
     }
+  } else if (this.email === null || this.email === '') {
+    this.email = undefined;
   }
+  
   next();
 });
 
