@@ -33,24 +33,41 @@ var swaggerSpec = require('./config/swagger');
 const allowedOrigins = [
   'http://localhost:5173',
   'https://lib-mag.vercel.app',
+  
   'https://lib-mag-be-psyjour.onrender.com',
+  'http://localhost:3000',
+  
   'http://127.0.0.1:5500',
   'http://localhost:5500',
   'http://127.0.0.1:5501',
   'http://localhost:5501',
   'http://127.0.0.1:5502',
   'http://localhost:5502',
-  'http://localhost:3000',
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+    if (!origin) {
+      console.log('CORS: No origin (same-origin or non-browser request)');
       return callback(null, true);
     }
     
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('CORS: Allowed origin:', origin);
+      return callback(null, true);
+    }
+    
+    if (origin.endsWith('.vercel.app')) {
+      console.log('CORS: Vercel deployment:', origin);
+      return callback(null, true);
+    }
+    
+    if (origin.includes('render.com')) {
+      console.log('CORS: Render domain:', origin);
+      return callback(null, true);
+    }
+    
+    console.log('CORS: Blocked origin:', origin);
     var msg = 'The CORS policy for this site does not allow access from the specified origin.';
     return callback(new Error(msg), false);
   },
@@ -86,7 +103,26 @@ app.use('/api', userReadingProgressRouter);
 
 app.use('/api/books', userBooksRoutes);
 
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: `
+    .swagger-ui .topbar { 
+      display: none; 
+    }
+    .swagger-ui .info { 
+      margin: 20px 0; 
+    }
+  `,
+  customSiteTitle: 'PsycheJournal API Documentation',
+  swaggerOptions: {
+    defaultModelsExpandDepth: -1,
+    docExpansion: 'list',
+    filter: true,
+    showRequestHeaders: true,
+    tryItOutEnabled: true,
+    persistAuthorization: true,
+    displayRequestDuration: true
+  }
+}));
 
 app.use(errorHandler);
 

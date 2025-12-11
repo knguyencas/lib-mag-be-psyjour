@@ -14,11 +14,11 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:3000',  // ← REMOVED /api
+        url: 'http://localhost:3000',
         description: 'Development server'
       },
       {
-        url: 'https://lib-mag-be-psyjour.onrender.com',  // ← REMOVED /api
+        url: 'https://lib-mag-be-psyjour.onrender.com',
         description: 'Production server'
       }
     ],
