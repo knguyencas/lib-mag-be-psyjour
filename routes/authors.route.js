@@ -4,7 +4,7 @@ const authorsController = require('../controllers/authors.controller.js');
 
 /**
  * @swagger
- * /authors:
+ * /api/authors:
  *   get:
  *     summary: Get all authors with pagination and filters
  *     tags: [Authors]
@@ -48,7 +48,7 @@ router.get('/', authorsController.getAllAuthors);
 
 /**
  * @swagger
- * /authors/search:
+ * /api/authors/search:
  *   get:
  *     summary: Search authors by name or biography
  *     tags: [Authors]
@@ -77,7 +77,7 @@ router.get('/search', authorsController.searchAuthors);
 
 /**
  * @swagger
- * /authors/top-by-books:
+ * /api/authors/top-by-books:
  *   get:
  *     summary: Get top authors by book count
  *     tags: [Authors]
@@ -95,7 +95,7 @@ router.get('/top-by-books', authorsController.getTopAuthorsByBookCount);
 
 /**
  * @swagger
- * /authors/top-by-rating:
+ * /api/authors/top-by-rating:
  *   get:
  *     summary: Get top authors by average book rating
  *     tags: [Authors]
@@ -118,7 +118,7 @@ router.get('/top-by-rating', authorsController.getTopAuthorsByRating);
 
 /**
  * @swagger
- * /authors/nationalities:
+ * /api/authors/nationalities:
  *   get:
  *     summary: Get all unique nationalities
  *     tags: [Authors]
@@ -130,7 +130,7 @@ router.get('/nationalities', authorsController.getAllNationalities);
 
 /**
  * @swagger
- * /authors/nationality/{nationality}:
+ * /api/authors/nationality/{nationality}:
  *   get:
  *     summary: Get authors by nationality
  *     tags: [Authors]
@@ -156,7 +156,7 @@ router.get('/nationality/:nationality', authorsController.getAuthorsByNationalit
 
 /**
  * @swagger
- * /authors/{id}/stats:
+ * /api/authors/{id}/stats:
  *   get:
  *     summary: Get author statistics
  *     tags: [Authors]
@@ -176,7 +176,7 @@ router.get('/:id/stats', authorsController.getAuthorStats);
 
 /**
  * @swagger
- * /authors/{id}:
+ * /api/authors/{id}:
  *   get:
  *     summary: Get a single author by ID
  *     tags: [Authors]
@@ -196,7 +196,7 @@ router.get('/:id', authorsController.getAuthorById);
 
 /**
  * @swagger
- * /authors:
+ * /api/authors:
  *   post:
  *     summary: Create a new author
  *     tags: [Authors]
@@ -232,7 +232,7 @@ router.post('/', authorsController.createAuthor);
 
 /**
  * @swagger
- * /authors/{id}:
+ * /api/authors/{id}:
  *   put:
  *     summary: Update an author
  *     tags: [Authors]
@@ -258,7 +258,7 @@ router.put('/:id', authorsController.updateAuthor);
 
 /**
  * @swagger
- * /authors/{id}:
+ * /api/authors/{id}:
  *   delete:
  *     summary: Delete an author
  *     tags: [Authors]

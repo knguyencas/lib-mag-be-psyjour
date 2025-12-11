@@ -23,7 +23,7 @@ const {
 
 /**
  * @swagger
- * /admin/posts/visual:
+ * /api/admin/posts/visual:
  *   get:
  *     summary: Get all visual posts
  *     description: Retrieve a paginated list of visual posts. Can be filtered by status.
@@ -66,7 +66,7 @@ router.get(
 
 /**
  * @swagger
- * /admin/posts/visual/{id}/approve:
+ * /api/admin/posts/visual/{id}/approve:
  *   patch:
  *     summary: Approve a visual post
  *     description: Change status of a visual post to `published`.
@@ -99,7 +99,7 @@ router.patch(
 
 /**
  * @swagger
- * /admin/posts/visual/{id}/reject:
+ * /api/admin/posts/visual/{id}/reject:
  *   patch:
  *     summary: Reject a visual post
  *     description: Change status of a visual post to `rejected`.
@@ -132,7 +132,7 @@ router.patch(
 
 /**
  * @swagger
- * /admin/posts/visual/{id}/archive:
+ * /api/admin/posts/visual/{id}/archive:
  *   patch:
  *     summary: Archive a visual post
  *     description: Change status of a visual post to `archived`.
@@ -165,7 +165,7 @@ router.patch(
 
 /**
  * @swagger
- * /admin/posts/visual/{id}:
+ * /api/admin/posts/visual/{id}:
  *   delete:
  *     summary: Delete a visual post
  *     description: Permanently delete a visual post by post_id.
@@ -198,7 +198,7 @@ router.delete(
 
 /**
  * @swagger
- * /admin/posts/perspective:
+ * /api/admin/posts/perspective:
  *   get:
  *     summary: Get all perspective posts
  *     description: Retrieve a paginated list of perspective posts. Can be filtered by status.
@@ -241,7 +241,7 @@ router.get(
 
 /**
  * @swagger
- * /admin/posts/perspective/{id}/approve:
+ * /api/admin/posts/perspective/{id}/approve:
  *   patch:
  *     summary: Approve a perspective post
  *     description: Change status of a perspective post to `published`.
@@ -274,7 +274,7 @@ router.patch(
 
 /**
  * @swagger
- * /admin/posts/perspective/{id}/reject:
+ * /api/admin/posts/perspective/{id}/reject:
  *   patch:
  *     summary: Reject a perspective post
  *     description: Change status of a perspective post to `rejected`.
@@ -307,7 +307,7 @@ router.patch(
 
 /**
  * @swagger
- * /admin/posts/perspective/{id}/archive:
+ * /api/admin/posts/perspective/{id}/archive:
  *   patch:
  *     summary: Archive a perspective post
  *     description: Change status of a perspective post to `archived`.
@@ -340,7 +340,7 @@ router.patch(
 
 /**
  * @swagger
- * /admin/posts/perspective/{id}:
+ * /api/admin/posts/perspective/{id}:
  *   delete:
  *     summary: Delete a perspective post
  *     description: Permanently delete a perspective post by post_id.

@@ -21,7 +21,7 @@ const upload = multer({
 
 /**
  * @swagger
- * /admin/books:
+ * /api/admin/books:
  *   post:
  *     summary: Create a new book (Admin only)
  *     tags: [AdminBooks]
@@ -76,7 +76,7 @@ router.post(
 
 /**
  * @swagger
- * /admin/books/manage:
+ * /api/admin/books/manage:
  *   get:
  *     summary: Get list of books for admin management
  *     tags: [AdminBooks]
@@ -99,7 +99,7 @@ router.get(
 
 /**
  * @swagger
- * /admin/books/manage/{bookId}:
+ * /api/admin/books/manage/{bookId}:
  *   get:
  *     summary: Get book detail for admin by ID
  *     tags: [AdminBooks]
@@ -131,7 +131,7 @@ router.get(
 
 /**
  * @swagger
- * /admin/books/manage/{bookId}:
+ * /api/admin/books/manage/{bookId}:
  *   put:
  *     summary: Update book information (Admin only)
  *     tags: [AdminBooks]
@@ -195,7 +195,7 @@ router.put(
 
 /**
  * @swagger
- * /admin/books/manage/{bookId}:
+ * /api/admin/books/manage/{bookId}:
  *   delete:
  *     summary: Delete a book (Admin only)
  *     tags: [AdminBooks]

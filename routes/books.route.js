@@ -4,7 +4,7 @@ const bookController = require('../controllers/books.controller.js');
 
 /**
  * @swagger
- * /books:
+ * /api/books:
  *   get:
  *     summary: Get all books with pagination and filters
  *     tags: [Books]
@@ -74,7 +74,7 @@ router.get('/', bookController.getAllBooks);
 
 /**
  * @swagger
- * /books/stats/overview:
+ * /api/books/stats/overview:
  *   get:
  *     summary: Get book statistics overview
  *     tags: [Books]
@@ -86,7 +86,7 @@ router.get('/stats/overview', bookController.getStatsOverview);
 
 /**
  * @swagger
- * /books/top-rated-by-category:
+ * /api/books/top-rated-by-category:
  *   get:
  *     summary: Get top 10 books by rating for every category
  *     tags: [Books]
@@ -98,7 +98,7 @@ router.get('/top-rated-by-category', bookController.getTopRatedByCategory);
 
 /**
  * @swagger
- * /books/featured:
+ * /api/books/featured:
  *   get:
  *     summary: Get featured books
  *     tags: [Books]
@@ -116,7 +116,7 @@ router.get('/featured', bookController.getFeaturedBooks);
 
 /**
  * @swagger
- * /books/search:
+ * /api/books/search:
  *   get:
  *     summary: Advanced search for books
  *     tags: [Books]
@@ -141,7 +141,7 @@ router.get('/search', bookController.searchBooks);
 
 /**
  * @swagger
- * /books/author/{authorId}:
+ * /api/books/author/{authorId}:
  *   get:
  *     summary: Get all books by a specific author
  *     tags: [Books]
@@ -159,7 +159,7 @@ router.get('/author/:authorId', bookController.getBooksByAuthor);
 
 /**
  * @swagger
- * /books/category/{category}:
+ * /api/books/category/{category}:
  *   get:
  *     summary: Get all books by a specific category
  *     tags: [Books]
@@ -177,7 +177,7 @@ router.get('/category/:category', bookController.getBooksByCategory);
 
 /**
  * @swagger
- * /books/genre/{genre}:
+ * /api/books/genre/{genre}:
  *   get:
  *     summary: Get all books by a specific primary genre
  *     tags: [Books]
@@ -195,7 +195,7 @@ router.get('/genre/:genre', bookController.getBooksByGenre);
 
 /**
  * @swagger
- * /books/tags/{tag}:
+ * /api/books/tags/{tag}:
  *   get:
  *     summary: Get all books by a specific tag
  *     tags: [Books]
@@ -213,7 +213,7 @@ router.get('/tags/:tag', bookController.getBooksByTag);
 
 /**
  * @swagger
- * /books/metadata/genres:
+ * /api/books/metadata/genres:
  *   get:
  *     summary: Get all available primary genres
  *     tags: [Books]
@@ -225,7 +225,7 @@ router.get('/metadata/genres', bookController.getPrimaryGenres);
 
 /**
  * @swagger
- * /books/metadata/categories:
+ * /api/books/metadata/categories:
  *   get:
  *     summary: Get all categories (grouped by genre)
  *     tags: [Books]
@@ -237,7 +237,7 @@ router.get('/metadata/categories', bookController.getAllCategories);
 
 /**
  * @swagger
- * /books/metadata/categories/{genre}:
+ * /api/books/metadata/categories/{genre}:
  *   get:
  *     summary: Get categories by genre
  *     tags: [Books]
@@ -255,7 +255,7 @@ router.get('/metadata/categories/:genre', bookController.getCategoriesByGenre);
 
 /**
  * @swagger
- * /books/metadata/tags:
+ * /api/books/metadata/tags:
  *   get:
  *     summary: Get all tags (grouped by genre)
  *     tags: [Books]
@@ -267,7 +267,7 @@ router.get('/metadata/tags', bookController.getAllTags);
 
 /**
  * @swagger
- * /books/metadata/tags/{genre}:
+ * /api/books/metadata/tags/{genre}:
  *   get:
  *     summary: Get tags by genre
  *     tags: [Books]
@@ -285,7 +285,7 @@ router.get('/metadata/tags/:genre', bookController.getTagsByGenre);
 
 /**
  * @swagger
- * /books/popular:
+ * /api/books/popular:
  *   get:
  *     summary: Get popular books based on views and ratings
  *     tags: [Books]
@@ -294,7 +294,7 @@ router.get('/popular', bookController.getPopularBooks);
 
 /**
  * @swagger
- * /books/{id}:
+ * /api/books/{id}:
  *   get:
  *     summary: Get a single book by ID
  *     tags: [Books]
@@ -315,7 +315,7 @@ router.get('/:id', bookController.getBookById);
 
 /**
  * @swagger
- * /books/{id}/related:
+ * /api/books/{id}/related:
  *   get:
  *     summary: Get related books
  *     tags: [Books]
@@ -337,7 +337,7 @@ router.get('/:id/related', bookController.getRelatedBooks);
 
 /**
  * @swagger
- * /books:
+ * /api/books:
  *   post:
  *     summary: Create a new book
  *     tags: [Books]
@@ -357,7 +357,7 @@ router.post('/', bookController.createBook);
 
 /**
  * @swagger
- * /books/{id}:
+ * /api/books/{id}:
  *   put:
  *     summary: Update a book
  *     tags: [Books]
@@ -383,7 +383,7 @@ router.put('/:id', bookController.updateBook);
 
 /**
  * @swagger
- * /books/{id}/status:
+ * /api/books/{id}/status:
  *   patch:
  *     summary: Update book status
  *     tags: [Books]
@@ -413,7 +413,7 @@ router.patch('/:id/status', bookController.updateStatus);
 
 /**
  * @swagger
- * /books/{id}/rating:
+ * /api/books/{id}/rating:
  *   patch:
  *     summary: Update book rating
  *     tags: [Books]
@@ -444,7 +444,7 @@ router.patch('/:id/rating', bookController.updateRating);
 
 /**
  * @swagger
- * /books/{id}/featured:
+ * /api/books/{id}/featured:
  *   patch:
  *     summary: Toggle book featured status
  *     tags: [Books]
@@ -473,7 +473,7 @@ router.patch('/:id/featured', bookController.toggleFeatured);
 
 /**
  * @swagger
- * /books/{id}/download:
+ * /api/books/{id}/download:
  *   post:
  *     summary: Increment book download count
  *     tags: [Books]
@@ -491,7 +491,7 @@ router.post('/:id/download', bookController.incrementDownload);
 
 /**
  * @swagger
- * /books/{id}:
+ * /api/books/{id}:
  *   delete:
  *     summary: Delete a book
  *     tags: [Books]
