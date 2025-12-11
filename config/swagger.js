@@ -1,4 +1,29 @@
 const swaggerJsdoc = require('swagger-jsdoc');
+const isProduction = process.env.NODE_ENV === 'production' || 
+                     process.env.RENDER === 'true' ||
+                     !process.env.NODE_ENV;
+
+const servers = isProduction ? [
+  // Production first
+  {
+    url: 'https://lib-mag-be-psyjour.onrender.com',
+    description: 'Production Server (Render)'
+  },
+  {
+    url: 'http://localhost:3000',
+    description: 'Local Development Server'
+  }
+] : [
+  // Localhost first
+  {
+    url: 'http://localhost:3000',
+    description: 'Local Development Server'
+  },
+  {
+    url: 'https://lib-mag-be-psyjour.onrender.com',
+    description: 'Production Server (Render)'
+  }
+];
 
 const options = {
   definition: {
@@ -12,42 +37,33 @@ const options = {
         email: 'support@psychejournal.com'
       }
     },
-    servers: [
-      {
-        url: 'http://localhost:3000',
-        description: 'Development server'
-      },
-      {
-        url: 'https://lib-mag-be-psyjour.onrender.com',
-        description: 'Production server'
-      }
-    ],
+    servers: servers,
     components: {
       securitySchemes: {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'Enter JWT token'
+          description: 'Enter JWT token (without "Bearer " prefix)'
         }
       },
       schemas: {
       }
     },
     tags: [
-      { name: 'Books', description: 'Book management endpoints' },
-      { name: 'Authors', description: 'Author management endpoints' },
       { name: 'Auth', description: 'Authentication & user management' },
-      { name: 'AdminBooks', description: 'Admin book operations' },
-      { name: 'AdminManageBooks', description: 'Admin book list management' },
-      { name: 'AdminManagePosts', description: 'Admin post moderation' },
-      { name: 'AdminMeta', description: 'Admin metadata helpers (authors, categories, tags)' },
-      { name: 'AdminUser', description: 'Admin user management' },
-      { name: 'UserBooks', description: 'User book interactions' },
+      { name: 'Books', description: 'Public book endpoints' },
+      { name: 'Authors', description: 'Author information' },
+      { name: 'AdminBooks', description: 'Admin: Create/update books' },
+      { name: 'AdminManageBooks', description: 'Admin: Manage book list' },
+      { name: 'AdminManagePosts', description: 'Admin: Moderate posts' },
+      { name: 'AdminMeta', description: 'Admin: Search authors/categories/tags' },
+      { name: 'AdminUser', description: 'Admin: User management' },
+      { name: 'UserBooks', description: 'User: Ratings & comments' },
       { name: 'Favorites', description: 'User favorites' },
       { name: 'ReadingProgress', description: 'Reading progress tracking' },
-      { name: 'Visual Posts', description: 'Visual post management' },
-      { name: 'Perspective Posts', description: 'Perspective post management' }
+      { name: 'Visual Posts', description: 'Visual posts management' },
+      { name: 'Perspective Posts', description: 'Perspective posts management' }
     ]
   },
   apis: [
@@ -57,5 +73,7 @@ const options = {
 };
 
 const swaggerSpec = swaggerJsdoc(options);
+
+console.log('Swagger UI default server:', servers[0].url);
 
 module.exports = swaggerSpec;
