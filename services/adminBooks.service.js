@@ -6,9 +6,6 @@ const cloudinary = require('../config/cloudinary');
 const ApiError = require('../utils/apiError');
 
 class AdminBooksService {
-  /**
-   * Generate unique book_id
-   */
   async generateBookId() {
     const prefix = 'BK';
     const timestamp = Date.now().toString().slice(-8);
@@ -16,16 +13,12 @@ class AdminBooksService {
     return `${prefix}${timestamp}${random}`;
   }
 
-  /**
-   * Create a new book with cover + ebook upload
-   */
   async createBook(adminUserId, body, files) {
     try {
-      // ========== 1) PARSE INPUT ==========
       const {
         title,
-        author,        // Single author name from frontend
-        author_id,     // Single author_id from frontend
+        author,
+        author_id,
         publisher,
         year,
         language,
@@ -38,7 +31,6 @@ class AdminBooksService {
         tags
       } = body;
 
-      // ========== 2) VALIDATE REQUIRED FIELDS ==========
       if (!title?.trim()) {
         throw ApiError.badRequest('Title is required');
       }
@@ -47,8 +39,33 @@ class AdminBooksService {
         throw ApiError.badRequest('Author name is required');
       }
 
-      if (!author_id?.trim()) {
-        throw ApiError.badRequest('Author ID is required');
+      let finalAuthorId = author_id?.trim();
+      
+      if (!finalAuthorId) {
+        console.log(`Author ID not provided. Creating new author: "${author.trim()}"`);
+        
+        const existingAuthor = await Author.findOne({ 
+          name: author.trim() 
+        });
+        
+        if (existingAuthor) {
+          console.log(`Found existing author: ${existingAuthor.author_id}`);
+          finalAuthorId = existingAuthor.author_id;
+        } else {
+          // Generate new author_id
+          const authorTimestamp = Date.now().toString().slice(-8);
+          const authorRandom = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+          finalAuthorId = `AU${authorTimestamp}${authorRandom}`;
+          
+          // Create new author
+          const newAuthor = await Author.create({
+            author_id: finalAuthorId,
+            name: author.trim(),
+            needs_update: true
+          });
+          
+          console.log(`Created new author: ${newAuthor.author_id} (${newAuthor.name})`);
+        }
       }
 
       if (!publisher?.trim()) {
@@ -71,7 +88,6 @@ class AdminBooksService {
         throw ApiError.badRequest('Page count is required');
       }
 
-      // Validate files
       if (!files.cover || !files.cover[0]) {
         throw ApiError.badRequest('Cover image is required');
       }
@@ -80,7 +96,6 @@ class AdminBooksService {
         throw ApiError.badRequest('EPUB file is required');
       }
 
-      // ========== 3) HANDLE CATEGORIES ==========
       let categoryNames = [];
       if (categories) {
         const catList = JSON.parse(categories);
@@ -91,7 +106,6 @@ class AdminBooksService {
           let cat = await Category.findOne({ name: catName.trim() });
           
           if (!cat) {
-            // Create new category with needs_update flag
             cat = await Category.create({
               name: catName.trim(),
               isActive: true,
@@ -103,15 +117,13 @@ class AdminBooksService {
         }
       }
 
-      // ========== 4) HANDLE TAGS ==========
       let tagNames = [];
       if (tags) {
         const tagList = JSON.parse(tags);
         tagNames = tagList.map(t => t.toLowerCase().trim()).filter(Boolean);
       }
 
-      // ========== 5) UPLOAD COVER TO CLOUDINARY ==========
-      console.log('📤 Uploading cover to Cloudinary...');
+      console.log('Uploading cover to Cloudinary...');
       const coverFile = files.cover[0];
       const coverResult = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
@@ -132,10 +144,9 @@ class AdminBooksService {
         uploadStream.end(coverFile.buffer);
       });
 
-      console.log('✅ Cover uploaded:', coverResult.secure_url);
+      console.log('Cover uploaded:', coverResult.secure_url);
 
-      // ========== 6) UPLOAD EBOOK TO CLOUDINARY ==========
-      console.log('📤 Uploading EPUB to Cloudinary...');
+      console.log('Uploading EPUB to Cloudinary...');
       const ebookFile = files.ebook[0];
       const ebookResult = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
@@ -151,18 +162,16 @@ class AdminBooksService {
         uploadStream.end(ebookFile.buffer);
       });
 
-      console.log('✅ EPUB uploaded:', ebookResult.secure_url);
+      console.log('EPUB uploaded:', ebookResult.secure_url);
 
-      // ========== 7) GENERATE BOOK ID ==========
       const book_id = await this.generateBookId();
-      console.log('📚 Generated book_id:', book_id);
+      console.log('Generated book_id:', book_id);
 
-      // ========== 8) CREATE BOOK ==========
       const bookData = {
         book_id,
         title: title.trim(),
         author: author.trim(),
-        author_id: author_id.trim(),
+        author_id: finalAuthorId,
         publisher: publisher.trim(),
         year: parseInt(year, 10),
         language: language || 'en',
@@ -200,24 +209,24 @@ class AdminBooksService {
         }
       };
 
-      console.log('💾 Creating book in database...');
+      console.log('Creating book in database...');
       const book = await Book.create(bookData);
 
-      console.log('✅ Book created successfully:', book.book_id);
+      console.log('Book created successfully:', book.book_id);
 
       return {
         book_id: book.book_id,
         title: book.title,
         author: book.author,
+        author_id: book.author_id,
         status: book.status,
         primary_genre: book.primary_genre,
         cover_url: book.coverImage_cloud.url,
         epub_url: book.epub.url
       };
     } catch (error) {
-      console.error('❌ Error in createBook service:', error);
+      console.error('Error in createBook service:', error);
       
-      // Clean up uploaded files on error
       if (error.coverPublicId) {
         try {
           await cloudinary.uploader.destroy(error.coverPublicId);
@@ -238,9 +247,6 @@ class AdminBooksService {
     }
   }
 
-  /**
-   * Get all books for management with pagination, filters, search
-   */
   async getManageBooks(queryParams) {
     const {
       page = 1,
@@ -288,9 +294,6 @@ class AdminBooksService {
     };
   }
 
-  /**
-   * Get single book by book_id
-   */
   async getBookById(bookId) {
     const book = await Book.findOne({ book_id: bookId });
     
@@ -311,7 +314,34 @@ class AdminBooksService {
 
       if (body.title) book.title = body.title.trim();
       if (body.author) book.author = body.author.trim();
-      if (body.author_id) book.author_id = body.author_id.trim();
+      
+      if (body.author && !body.author_id) {
+        console.log(`Updating author without ID. Checking/creating author: "${body.author.trim()}"`);
+        
+        const existingAuthor = await Author.findOne({ 
+          name: body.author.trim() 
+        });
+        
+        if (existingAuthor) {
+          book.author_id = existingAuthor.author_id;
+        } else {
+          const authorTimestamp = Date.now().toString().slice(-8);
+          const authorRandom = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+          const newAuthorId = `AU${authorTimestamp}${authorRandom}`;
+          
+          const newAuthor = await Author.create({
+            author_id: newAuthorId,
+            name: body.author.trim(),
+            needs_update: true
+          });
+          
+          book.author_id = newAuthor.author_id;
+          console.log(`Created new author: ${newAuthor.author_id}`);
+        }
+      } else if (body.author_id) {
+        book.author_id = body.author_id.trim();
+      }
+      
       if (body.publisher) book.publisher = body.publisher.trim();
       if (body.year) book.year = parseInt(body.year, 10);
       if (body.language) book.language = body.language;
@@ -348,7 +378,7 @@ class AdminBooksService {
       }
 
       if (files.cover && files.cover[0]) {
-        console.log('📤 Uploading new cover...');
+        console.log('Uploading new cover...');
         
         if (book.coverImage_cloud?.public_id) {
           try {
